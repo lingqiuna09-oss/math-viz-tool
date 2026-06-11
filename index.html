@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
@@ -169,6 +169,7 @@ canvas {
   display: block; margin: 0 auto; border-radius: 4px;
   box-shadow: 0 0 0 1px rgba(0,0,0,0.06);
   image-rendering: auto;
+  touch-action: none; /* prevent browser gestures on canvas */
 }
 
 /* ============ CONTROLS ============ */
@@ -270,17 +271,39 @@ input[type=range]::-moz-range-thumb {
 }
 
 /* ============ RESPONSIVE ============ */
-@media (max-width: 640px) {
-  .header h1 { font-size: 19px; }
-  .header { padding: 16px 12px; }
-  .card { padding: 16px; }
-  .btn-row { flex-direction: column; }
-  .example-btns { gap: 6px; }
-  .example-btn { padding: 6px 12px; font-size: 12px; }
+@media (max-width: 768px) {
+  .header h1 { font-size: 17px; }
+  .header { padding: 14px 10px; }
+  .header p { font-size: 11px; }
+  .card { padding: 12px; }
+  .container { padding: 0 6px; margin: 8px auto; }
+  .btn-row { flex-direction: column; gap: 8px; }
+  .btn-row button { height: 48px; font-size: 15px; }
+  .example-btns { gap: 5px; }
+  .example-btn { padding: 8px 14px; font-size: 12px; }
   .parse-row { flex-direction: column; }
+  .btn-parse { width: 100%; padding: 14px; font-size: 16px; }
   .manual-panel .config-row { flex-direction: column; }
-  .live-data { font-size: 14px; }
-  .container { padding: 0 8px; margin: 12px auto; }
+  .live-data { font-size: 13px; padding: 10px 12px; }
+  .speed-row { flex-wrap: wrap; gap: 6px; }
+  .speed-row select { padding: 8px 12px; font-size: 14px; }
+  .speed-row button { padding: 8px 14px !important; font-size: 16px !important; }
+  .section-title { font-size: 16px; }
+  #problemInput { height: 80px; font-size: 16px; }
+  .param-label { font-size: 15px; }
+  input[type=range] { height: 10px; }
+  input[type=range]::-webkit-slider-thumb { width: 28px; height: 28px; }
+  input[type=range]::-moz-range-thumb { width: 28px; height: 28px; }
+}
+
+@media (max-width: 400px) {
+  .header h1 { font-size: 15px; letter-spacing: 1px; }
+  .header p { font-size: 10px; }
+  .card { padding: 10px 8px; }
+  .example-btn { padding: 6px 10px; font-size: 11px; }
+  .btn-row button { height: 44px; font-size: 14px; }
+  .btn-parse { padding: 12px; font-size: 14px; }
+  canvas { border-radius: 2px; }
 }
 </style>
 </head>
@@ -2499,20 +2522,44 @@ class App {
 
     // ---- Canvas drag-to-pan & scroll-to-zoom (coordinate types 2,4,5) ----
     this._dragInfo = null;
+    this._pinchInfo = null; // { dist, midX, midY, xr, yr } for two-finger pinch
+
+    /** Convert clientX/Y to canvas logical coords */
+    const _client2canvas = (cx, cy) => {
+      const rect = canvas.getBoundingClientRect();
+      return {
+        mx: (cx - rect.left) * (CW / rect.width),
+        my: (cy - rect.top) * (CH / rect.height)
+      };
+    };
+
+    /** Get world coord at canvas point (mx, my) using grid g */
+    const _canvas2world = (mx, my, g) => ({
+      wx: g.xr[0] + (mx - g.gx) / g.gw * (g.xr[1] - g.xr[0]),
+      wy: g.yr[0] + (g.gy + g.gh - my) / g.gh * (g.yr[1] - g.yr[0])
+    });
+
+    /** Get world coord at midpoint between two touches */
+    const _touchMidWorld = (t0, t1, g) => {
+      const rect = canvas.getBoundingClientRect();
+      const midCX = ((t0.clientX + t1.clientX) / 2 - rect.left) * (CW / rect.width);
+      const midCY = ((t0.clientY + t1.clientY) / 2 - rect.top) * (CH / rect.height);
+      return _canvas2world(midCX, midCY, g);
+    };
+
+    // ---- Mouse ----
     canvas.addEventListener('mousedown', (e) => {
       const p = this._curProblem; if (!p || ![2,4,5].includes(p.type)) return;
       if (!p._defaultXRange) { p._defaultXRange = [...(p.xRange||[0,10])]; p._defaultYRange = [...(p.yRange||[0,10])]; }
-      this._dragInfo = { sx: e.offsetX, sy: e.offsetY, xr: [...(p.xRange||[0,10])], yr: [...(p.yRange||[0,10])] };
+      const { mx, my } = _client2canvas(e.clientX, e.clientY);
+      this._dragInfo = { sx: mx, sy: my, xr: [...(p.xRange||[0,10])], yr: [...(p.yRange||[0,10])] };
       canvas.style.cursor = 'grabbing';
     });
     window.addEventListener('mousemove', (e) => {
       if (!this._dragInfo) return;
       const p = this._curProblem; if (!p) return;
-      const rect = canvas.getBoundingClientRect();
-      const mx = (e.clientX - rect.left) * (CW / rect.width);
-      const my = (e.clientY - rect.top) * (CH / rect.height);
-      const g = this._gridLayout();
-      if (!g) return;
+      const { mx, my } = _client2canvas(e.clientX, e.clientY);
+      const g = this._gridLayout(); if (!g) return;
       const dxWorld = -(mx - this._dragInfo.sx) / g.pxPerUnit;
       const dyWorld = (my - this._dragInfo.sy) / g.pxPerUnit;
       p.xRange = [this._dragInfo.xr[0] + dxWorld, this._dragInfo.xr[1] + dxWorld];
@@ -2526,61 +2573,73 @@ class App {
       e.preventDefault();
       const p = this._curProblem; if (!p || ![2,4,5].includes(p.type)) return;
       const g = this._gridLayout(); if (!g) return;
-      const rect = canvas.getBoundingClientRect();
-      const mx = (e.clientX - rect.left) * (CW / rect.width);
-      const my = (e.clientY - rect.top) * (CH / rect.height);
-      // World coords at cursor
-      const wx = g.xr[0] + (mx - g.gx) / g.gw * (g.xr[1] - g.xr[0]);
-      const wy = g.yr[0] + (g.gy + g.gh - my) / g.gh * (g.yr[1] - g.yr[0]);
-      const factor = e.deltaY > 0 ? 1.12 : 1 / 1.12;
-      // Zoom around cursor
-      p.xRange = [wx - (wx - g.xr[0]) * factor, wx + (g.xr[1] - wx) * factor];
-      p.yRange = [wy - (wy - g.yr[0]) * factor, wy + (g.yr[1] - wy) * factor];
-      // Store as defaults for reset
+      const { mx, my } = _client2canvas(e.clientX, e.clientY);
+      const { wx, wy } = _canvas2world(mx, my, g);
+      // Smooth zoom factor — 8% per wheel tick feels natural
+      const zoom = e.deltaY > 0 ? 1.08 : 1 / 1.08;
+      p.xRange = [wx - (wx - g.xr[0]) * zoom, wx + (g.xr[1] - wx) * zoom];
+      p.yRange = [wy - (wy - g.yr[0]) * zoom, wy + (g.yr[1] - wy) * zoom];
       if (!p._defaultXRange) { p._defaultXRange = [...g.xr]; p._defaultYRange = [...g.yr]; }
       this._updateAll();
       this._dragInfo = null;
     }, { passive: false });
 
-    // Touch support (mobile)
+    // ---- Touch (mobile) ----
     canvas.addEventListener('touchstart', (e) => {
       const p = this._curProblem; if (!p || ![2,4,5].includes(p.type)) return;
       if (e.touches.length === 1) {
-        const t = e.touches[0]; const rect = canvas.getBoundingClientRect();
-        this._dragInfo = { sx: (t.clientX-rect.left)*(CW/rect.width), sy: (t.clientY-rect.top)*(CH/rect.height),
-          xr: [...(p.xRange||[0,10])], yr: [...(p.yRange||[0,10])] };
+        const { mx, my } = _client2canvas(e.touches[0].clientX, e.touches[0].clientY);
+        this._dragInfo = { sx: mx, sy: my, xr: [...(p.xRange||[0,10])], yr: [...(p.yRange||[0,10])] };
+        this._pinchInfo = null;
       } else if (e.touches.length === 2) {
-        this._pinchDist = Math.hypot(e.touches[0].clientX-e.touches[1].clientX, e.touches[0].clientY-e.touches[1].clientY);
         this._dragInfo = null;
+        const g = this._gridLayout(); if (!g) return;
+        const t0 = e.touches[0], t1 = e.touches[1];
+        const dist = Math.hypot(t0.clientX - t1.clientX, t0.clientY - t1.clientY);
+        const { wx, wy } = _touchMidWorld(t0, t1, g);
+        this._pinchInfo = { dist, wx, wy, xr: [...(p.xRange||[0,10])], yr: [...(p.yRange||[0,10])] };
+        if (!p._defaultXRange) { p._defaultXRange = [...(p.xRange||[0,10])]; p._defaultYRange = [...(p.yRange||[0,10])]; }
       }
     }, { passive: false });
+
     canvas.addEventListener('touchmove', (e) => {
       e.preventDefault();
       const p = this._curProblem; if (!p) return;
-      const rect = canvas.getBoundingClientRect();
       if (e.touches.length === 1 && this._dragInfo) {
-        const t = e.touches[0];
-        const mx = (t.clientX-rect.left)*(CW/rect.width), my = (t.clientY-rect.top)*(CH/rect.height);
+        const { mx, my } = _client2canvas(e.touches[0].clientX, e.touches[0].clientY);
         const g = this._gridLayout(); if (!g) return;
-        const dxW = -(mx-this._dragInfo.sx)/g.pxPerUnit, dyW = (my-this._dragInfo.sy)/g.pxPerUnit;
-        p.xRange = [this._dragInfo.xr[0]+dxW, this._dragInfo.xr[1]+dxW];
-        p.yRange = [this._dragInfo.yr[0]+dyW, this._dragInfo.yr[1]+dyW];
+        const dxW = -(mx - this._dragInfo.sx) / g.pxPerUnit;
+        const dyW = (my - this._dragInfo.sy) / g.pxPerUnit;
+        p.xRange = [this._dragInfo.xr[0] + dxW, this._dragInfo.xr[1] + dxW];
+        p.yRange = [this._dragInfo.yr[0] + dyW, this._dragInfo.yr[1] + dyW];
         this._updateAll();
-      } else if (e.touches.length === 2) {
-        const d = Math.hypot(e.touches[0].clientX-e.touches[1].clientX, e.touches[0].clientY-e.touches[1].clientY);
-        if (this._pinchDist && d > 0) {
-          const factor = this._pinchDist / d;
-          this._pinchDist = d;
-          const g = this._gridLayout(); if (!g) return;
-          const cx = (g.xr[0]+g.xr[1])/2, cy = (g.yr[0]+g.yr[1])/2;
-          const hw = (g.xr[1]-g.xr[0])/2*factor, hh = (g.yr[1]-g.yr[0])/2*factor;
-          p.xRange = [cx-hw, cx+hw]; p.yRange = [cy-hh, cy+hh];
-          if (!p._defaultXRange) { p._defaultXRange = [...g.xr]; p._defaultYRange = [...g.yr]; }
-          this._updateAll();
-        }
+      } else if (e.touches.length === 2 && this._pinchInfo) {
+        const t0 = e.touches[0], t1 = e.touches[1];
+        const d = Math.hypot(t0.clientX - t1.clientX, t0.clientY - t1.clientY);
+        if (d < 10) return;
+        // Smoother pinch: use sqrt to dampen aggressive scaling
+        let factor = this._pinchInfo.dist / d;
+        factor = factor > 2 ? 2 : factor < 0.5 ? 0.5 : factor; // clamp
+        // Zoom around the ORIGINAL pinch midpoint (stable)
+        const wx = this._pinchInfo.wx, wy = this._pinchInfo.wy;
+        const hw = (this._pinchInfo.xr[1] - this._pinchInfo.xr[0]) / 2 * factor;
+        const hh = (this._pinchInfo.yr[1] - this._pinchInfo.yr[0]) / 2 * factor;
+        p.xRange = [wx - hw, wx + hw];
+        p.yRange = [wy - hh, wy + hh];
+        this._updateAll();
       }
     }, { passive: false });
-    canvas.addEventListener('touchend', () => { this._dragInfo = null; this._pinchDist = 0; });
+
+    canvas.addEventListener('touchend', (e) => {
+      if (e.touches.length === 0) { this._dragInfo = null; this._pinchInfo = null; }
+      else if (e.touches.length === 1 && this._pinchInfo) {
+        // Transition from pinch to single-finger drag
+        this._pinchInfo = null;
+        const p = this._curProblem; if (!p) return;
+        const { mx, my } = _client2canvas(e.touches[0].clientX, e.touches[0].clientY);
+        this._dragInfo = { sx: mx, sy: my, xr: [...(p.xRange||[0,10])], yr: [...(p.yRange||[0,10])] };
+      }
+    });
 
 
     // ---- Geometry Editor (for Type 7) ----
@@ -2769,11 +2828,9 @@ class App {
     }
     const pxPerUnit = gw / (xr[1] - xr[0]);
     return { gx, gy, gw, gh, xr, yr, pxPerUnit };
-    const pxPerUnitY = gh / (yr[1] - yr[0]);
-    return { gx, gy, gw, gh, xr, yr, pxPerUnit: pxPerUnitX };
   }
 
-  /** Build Type 7 problem from user-drawn marks */
+  /** Smooth zoom in/out/reset for coordinate views */
   _zoom(factor) {
     const p = this._curProblem;
     if (!p || ![2,4,5].includes(p.type)) return;
@@ -2781,6 +2838,7 @@ class App {
     if (!g || !g.xr || !g.yr) return;
 
     if (factor === 0) {
+      // Reset to defaults
       if (p._defaultXRange) { p.xRange = [...p._defaultXRange]; p.yRange = [...p._defaultYRange]; }
     } else {
       if (!p._defaultXRange) { p._defaultXRange = [...g.xr]; p._defaultYRange = [...g.yr]; }
