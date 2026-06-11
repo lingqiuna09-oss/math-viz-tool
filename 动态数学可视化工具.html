@@ -1,0 +1,3156 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>动态数学/物理可视化教学工具</title>
+
+<style>
+/* ============ CSS VARIABLES — Light Clean Palette ============ */
+:root {
+  --bg: #f0f2f5;
+  --card-bg: #ffffff;
+  --canvas-bg: #fafbfc;
+  --text: #1a1a2e;
+  --text-secondary: #6b7280;
+  --accent: #5b8def;
+  --accent2: #e8836d;
+  --quote-bg: #f8f9fb;
+  --quote-border: #5b8def;
+  --info-bg: #f0faf4;
+  --info-text: #2d6a4f;
+  --warn-bg: #fffbeb;
+  --warn-text: #b45309;
+  --error-bg: #fef2f2;
+  --error-text: #b91c1c;
+  --tag-bg: #fefce8;
+  --tag-text: #854d0e;
+  --btn-play: #5bb98c;
+  --btn-pause: #e8836d;
+  --btn-reset: #94a3b8;
+  --btn-primary: #5b8def;
+  --slider-track: #e2e8f0;
+  --slider-fill: #5b8def;
+  --shadow: 0 1px 3px rgba(0,0,0,0.04), 0 2px 12px rgba(0,0,0,0.04);
+  --highlight-green: rgba(91,185,140,0.15);
+  --highlight-red: rgba(232,131,109,0.12);
+  --border: #e5e7eb;
+}
+
+body.dark {
+  --bg: #1a1c1e;
+  --card-bg: #242629;
+  --canvas-bg: #1e2023;
+  --text: #d1d5db;
+  --text-secondary: #9ca3af;
+  --accent: #7baef7;
+  --accent2: #f09683;
+  --quote-bg: #2a2c30;
+  --quote-border: #7baef7;
+  --info-bg: #1a2822;
+  --info-text: #74c99a;
+  --warn-bg: #2a2418;
+  --warn-text: #f0b84c;
+  --error-bg: #2a1e1e;
+  --error-text: #f09683;
+  --tag-bg: #2a2418;
+  --tag-text: #d4a43a;
+  --btn-play: #5bb98c;
+  --btn-pause: #e8836d;
+  --btn-reset: #6b7280;
+  --btn-primary: #7baef7;
+  --slider-track: #374151;
+  --slider-fill: #7baef7;
+  --shadow: 0 1px 3px rgba(0,0,0,0.2), 0 2px 12px rgba(0,0,0,0.15);
+  --border: #2d3035;
+}
+
+/* ============ BASE STYLES ============ */
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: "Microsoft YaHei", "PingFang SC", "Helvetica Neue", sans-serif;
+  line-height: 1.6;
+  transition: background 0.3s, color 0.3s;
+  -webkit-font-smoothing: antialiased;
+}
+
+.container { max-width: 900px; margin: 24px auto; padding: 0 16px; }
+
+/* ============ HEADER ============ */
+.header {
+  background: linear-gradient(160deg, #1e3b52 0%, #1e4a6b 40%, #1a3550 100%);
+  color: #e8edf1;
+  text-align: center;
+  padding: 22px 20px;
+  border-radius: 10px 10px 0 0;
+  position: relative;
+  overflow: hidden;
+}
+.header::after {
+  content: ''; position: absolute; inset: 0;
+  background: radial-gradient(ellipse at 20% 50%, rgba(255,255,255,0.04) 0%, transparent 70%);
+  pointer-events: none;
+}
+.header h1 { margin: 0; font-size: 24px; letter-spacing: 2px; font-weight: 600; position: relative; }
+.header p { margin-top: 6px; color: #b0c4d4; font-size: 13px; position: relative; }
+.theme-toggle {
+  position: absolute; top: 14px; right: 18px; z-index: 1;
+  background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.15);
+  color: #d0d8e0; width: 38px; height: 38px; border-radius: 50%;
+  cursor: pointer; font-size: 20px; transition: all 0.25s;
+  display: flex; align-items: center; justify-content: center;
+}
+.theme-toggle:hover { background: rgba(255,255,255,0.2); border-color: rgba(255,255,255,0.3); }
+
+/* ============ CARDS ============ */
+.card {
+  background: var(--card-bg);
+  padding: 22px 24px;
+  box-shadow: var(--shadow);
+  transition: background 0.3s, box-shadow 0.3s;
+  border: 1px solid var(--border);
+  border-top: none;
+}
+.card + .card { border-top: 1px solid var(--border); }
+.card:last-of-type { border-radius: 0 0 10px 10px; }
+
+.section-title {
+  font-size: 18px; font-weight: 700; margin-bottom: 10px;
+  display: flex; align-items: center; gap: 8px;
+  color: var(--accent); letter-spacing: 1px;
+}
+
+/* ============ INPUT AREA ============ */
+#problemInput {
+  width: 100%; height: 100px; padding: 14px; font-size: 14px; line-height: 1.7;
+  border: 1.5px solid var(--border); border-radius: 6px; resize: vertical;
+  font-family: inherit; background: var(--card-bg); color: var(--text);
+  transition: border-color 0.25s, box-shadow 0.25s;
+}
+#problemInput:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(30,74,107,0.08); }
+
+.example-btns { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
+.example-btn {
+  padding: 7px 15px; border: 1.5px solid var(--accent); border-radius: 5px;
+  background: transparent; color: var(--accent); cursor: pointer; font-size: 13px;
+  transition: all 0.2s; white-space: nowrap; font-weight: 500;
+}
+.example-btn:hover { background: var(--accent); color: #fff; }
+
+.parse-row { display: flex; gap: 10px; margin-top: 14px; align-items: center; }
+.btn-parse {
+  padding: 10px 26px; background: var(--btn-primary); color: #fff;
+  border: none; border-radius: 6px; cursor: pointer; font-size: 15px; font-weight: 600;
+  transition: background 0.2s, transform 0.15s; letter-spacing: 1px;
+}
+.btn-parse:hover { background: #173a54; }
+.btn-parse:active { transform: scale(0.98); }
+
+/* ============ STATUS BAR ============ */
+.status-bar {
+  margin-top: 12px; padding: 10px 14px; border-radius: 6px; font-size: 13px;
+  display: none; align-items: center; gap: 8px; font-weight: 500;
+}
+.status-bar.show { display: flex; }
+.status-bar.warn { background: var(--warn-bg); color: var(--warn-text); border: 1px solid rgba(196,154,48,0.2); }
+.status-bar.error { background: var(--error-bg); color: var(--error-text); border: 1px solid rgba(201,107,91,0.2); }
+.status-bar.success { background: var(--info-bg); color: var(--info-text); border: 1px solid rgba(109,184,138,0.2); }
+
+/* ============ CANVAS ============ */
+.canvas-box {
+  background: var(--canvas-bg); padding: 16px; border-radius: 8px;
+  text-align: center; transition: background 0.3s;
+  border: 1px solid var(--border);
+}
+canvas {
+  display: block; margin: 0 auto; border-radius: 4px;
+  box-shadow: 0 0 0 1px rgba(0,0,0,0.06);
+  image-rendering: auto;
+}
+
+/* ============ CONTROLS ============ */
+.control { margin-top: 18px; }
+
+.param-label {
+  text-align: center; font-size: 18px; font-weight: 600; margin-bottom: 10px;
+  transition: color 0.3s; font-variant-numeric: tabular-nums;
+}
+.param-label .status-ok { color: #3a7d5e; }
+.param-label .status-bad { color: #b5583d; }
+
+.slider { width: 100%; }
+
+.btn-row { display: flex; gap: 10px; margin-top: 14px; }
+.btn-row button {
+  flex: 1; height: 42px; border: none; border-radius: 6px; color: #fff;
+  font-size: 16px; cursor: pointer; transition: transform 0.12s, box-shadow 0.2s, filter 0.2s;
+  font-weight: 600; letter-spacing: 1px;
+}
+.btn-row button:hover { filter: brightness(1.08); box-shadow: 0 2px 8px rgba(0,0,0,0.12); }
+.btn-row button:active { transform: scale(0.97); }
+.btn-play { background: var(--btn-play); }
+.btn-pause { background: var(--btn-pause); }
+.btn-reset { background: var(--btn-reset); }
+
+.speed-row { display: flex; align-items: center; gap: 10px; margin-top: 12px; justify-content: center; }
+.speed-row label { font-size: 13px; color: var(--text-secondary); }
+.speed-row select {
+  padding: 5px 10px; border-radius: 5px; border: 1px solid var(--border);
+  font-size: 13px; background: var(--card-bg); color: var(--text);
+}
+
+/* ============ LIVE DATA ============ */
+.live-data {
+  margin-top: 14px; padding: 12px 16px; border-radius: 6px;
+  background: var(--info-bg); color: var(--info-text);
+  text-align: center; font-size: 16px; font-weight: 600;
+  transition: background 0.3s, color 0.3s;
+  min-height: 22px; border: 1px solid rgba(109,184,138,0.15);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ============ MANUAL CONFIG ============ */
+.manual-toggle {
+  display: flex; align-items: center; gap: 8px; cursor: pointer;
+  font-size: 14px; font-weight: 600; color: var(--text);
+  padding: 8px 0; user-select: none;
+}
+.manual-toggle .arrow { transition: transform 0.25s; display: inline-block; font-size: 11px; }
+.manual-toggle.open .arrow { transform: rotate(90deg); }
+
+.manual-panel {
+  display: none; padding: 16px; background: var(--quote-bg);
+  border-radius: 6px; border-left: 3px solid var(--quote-border);
+  transition: background 0.3s;
+}
+.manual-panel.show { display: block; }
+
+.manual-panel label {
+  display: block; font-size: 13px; color: var(--text-secondary); margin-top: 8px; font-weight: 500;
+}
+.manual-panel input, .manual-panel select {
+  padding: 6px 10px; border-radius: 5px; border: 1px solid var(--border);
+  font-size: 13px; margin-top: 3px; background: var(--card-bg); color: var(--text);
+  width: 100%; max-width: 200px;
+}
+.manual-panel .config-row { display: flex; flex-wrap: wrap; gap: 14px; align-items: end; }
+.manual-panel .config-group { flex: 1; min-width: 120px; }
+.manual-panel .type-select { max-width: 300px; }
+.btn-apply {
+  margin-top: 14px; padding: 8px 22px; background: var(--btn-primary); color: #fff;
+  border: none; border-radius: 6px; cursor: pointer; font-size: 14px; font-weight: 600;
+  transition: background 0.2s;
+}
+.btn-apply:hover { background: #173a54; }
+
+/* ============ GEO EDITOR ============ */
+.geo-btn {
+  padding: 3px 10px; border: 1px solid var(--border); border-radius: 4px;
+  cursor: pointer; font-size: 12px; background: var(--card-bg); color: var(--text);
+  transition: all 0.15s;
+}
+.geo-btn:hover { border-color: var(--accent); background: rgba(91,141,239,0.08); }
+
+/* ============ SLIDER CUSTOM ============ */
+input[type=range] {
+  -webkit-appearance: none; appearance: none; width: 100%; height: 6px;
+  background: var(--slider-track); border-radius: 3px; outline: none; cursor: pointer;
+}
+input[type=range]::-webkit-slider-thumb {
+  -webkit-appearance: none; width: 20px; height: 20px;
+  background: var(--accent); border-radius: 50%; cursor: pointer;
+  border: 2px solid #fff; box-shadow: 0 1px 4px rgba(0,0,0,0.2);
+}
+input[type=range]::-moz-range-thumb {
+  width: 20px; height: 20px; background: var(--accent);
+  border-radius: 50%; cursor: pointer; border: 2px solid #fff;
+}
+
+/* ============ RESPONSIVE ============ */
+@media (max-width: 640px) {
+  .header h1 { font-size: 19px; }
+  .header { padding: 16px 12px; }
+  .card { padding: 16px; }
+  .btn-row { flex-direction: column; }
+  .example-btns { gap: 6px; }
+  .example-btn { padding: 6px 12px; font-size: 12px; }
+  .parse-row { flex-direction: column; }
+  .manual-panel .config-row { flex-direction: column; }
+  .live-data { font-size: 14px; }
+  .container { padding: 0 8px; margin: 12px auto; }
+}
+</style>
+</head>
+<body>
+
+<div class="container">
+
+<!-- HEADER -->
+<div class="header">
+  <button class="theme-toggle" id="themeBtn" title="切换主题">☀️</button>
+  <h1>🎓 动态数学/物理可视化教学工具</h1>
+  <p>支持文本输入题目 · 自动解析 · 交互演示 · 手动配置 · 几何编辑器</p>
+</div>
+
+<!-- INPUT CARD -->
+<div class="card">
+  <div class="section-title">📝 输入题目</div>
+  <textarea id="problemInput" placeholder="在此粘贴/输入题目文字描述……"></textarea>
+  <div class="example-btns">
+    <button class="example-btn" data-example="1">🏃 行程追及</button>
+    <button class="example-btn" data-example="2">📐 函数动直线</button>
+    <button class="example-btn" data-example="3">📈 分段运动</button>
+    <button class="example-btn" data-example="4">📊 动点面积</button>
+    <button class="example-btn" data-example="5">🔺 双动点几何</button>
+    <button class="example-btn" data-example="6">⬜ 平移重叠</button>
+  </div>
+  <div class="parse-row">
+    <button class="btn-parse" id="btnParse">🔍 解析并生成动画</button>
+  </div>
+  <div class="status-bar" id="statusBar"></div>
+</div>
+
+<!-- VISUALIZATION CARD -->
+<div class="card">
+  <div class="section-title">🎬 动态演示</div>
+  <div class="canvas-box">
+    <canvas id="mainCanvas"></canvas>
+  </div>
+  <div class="control">
+    <div class="param-label" id="paramLabel">⏱ 当前时间：<span id="paramValue">0.0</span> 秒</div>
+    <div class="slider-row">
+      <input class="slider" type="range" id="timeSlider" min="0" max="100" step="0.1" value="0">
+    </div>
+    <div class="btn-row">
+      <button class="btn-play" id="btnPlay">▶ 播放</button>
+      <button class="btn-pause" id="btnPause">⏸ 暂停</button>
+      <button class="btn-reset" id="btnReset">↺ 重置</button>
+    </div>
+    <div class="speed-row">
+      <label for="speedSelect">播放速度：</label>
+      <select id="speedSelect">
+        <option value="0.25">0.25×</option>
+        <option value="0.5">0.5×</option>
+        <option value="1" selected>1×</option>
+        <option value="1.5">1.5×</option>
+        <option value="2">2×</option>
+      </select>
+      <span style="margin-left:16px;"></span>
+      <label>视图缩放：</label>
+      <button type="button" id="btnZoomIn" title="放大" style="padding:4px 10px;border:1px solid var(--border);border-radius:4px;cursor:pointer;background:var(--card-bg);color:var(--text);font-size:14px;">🔍+</button>
+      <button type="button" id="btnZoomOut" title="缩小" style="padding:4px 10px;border:1px solid var(--border);border-radius:4px;cursor:pointer;background:var(--card-bg);color:var(--text);font-size:14px;">🔍−</button>
+      <button type="button" id="btnZoomFit" title="重置视图" style="padding:4px 10px;border:1px solid var(--border);border-radius:4px;cursor:pointer;background:var(--card-bg);color:var(--text);font-size:14px;">↺</button>
+    </div>
+    <div class="live-data" id="liveData"></div>
+
+    <!-- Geometry Editor (for Type 7) -->
+    <div id="geoEditor" style="margin-top:14px;padding:12px;border:1px dashed var(--border);border-radius:8px;display:none;">
+      <div style="font-weight:bold;font-size:14px;margin-bottom:8px;color:var(--accent);">✏️ 几何编辑器 — 在画布上点击放置顶点</div>
+      <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:8px;">
+        <span style="font-size:12px;">标签:</span>
+        <input id="geoLabel" value="A" style="width:32px;padding:3px 6px;text-align:center;border:1px solid var(--border);border-radius:4px;font-weight:bold;" maxlength="2">
+        <button id="geoAddPt" class="geo-btn" style="background:var(--accent);color:#fff;">📍 放顶点</button>
+        <button id="geoRect" class="geo-btn">⬜ 4点→矩形</button>
+        <button id="geoLineJoin" class="geo-btn">📏 2点→连线</button>
+        <button id="geoUndo" class="geo-btn" style="background:#fef2f2;color:#b91c1c;">↩ 撤销</button>
+        <button id="geoClear" class="geo-btn" style="background:#fef2f2;color:#b91c1c;">🗑 清空</button>
+      </div>
+      <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:8px;">
+        <span style="font-size:12px;">动点:</span>
+        <select id="geoMoving" style="padding:3px 6px;border:1px solid var(--border);border-radius:4px;font-size:12px;"><option value="">选择…</option></select>
+        <span style="font-size:12px;">路径:</span>
+        <button id="geoPathRec" class="geo-btn">🔴 记录路径</button>
+        <span id="geoPathShow" style="font-size:11px;color:var(--text-secondary);"></span>
+        <button id="geoPathClear" class="geo-btn" style="font-size:11px;padding:2px 6px;">✕</button>
+      </div>
+      <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;">
+        <span style="font-size:12px;">跟踪量:</span>
+        <input id="geoTrack" value="py-px" style="width:100px;padding:3px 6px;border:1px solid var(--border);border-radius:4px;font-size:12px;">
+        <span style="font-size:12px;">名称:</span>
+        <input id="geoTrackName" value="y" style="width:40px;padding:3px 6px;border:1px solid var(--border);border-radius:4px;font-size:12px;">
+        <button id="geoApply" style="padding:5px 18px;background:var(--btn-primary);color:#fff;border:none;border-radius:5px;cursor:pointer;font-weight:bold;">✅ 生成动画</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MANUAL CONFIG CARD -->
+<div class="card">
+  <div class="manual-toggle" id="manualToggle">
+    <span class="arrow">▶</span> 📋 手动配置（自动解析失败时可在此调整）
+  </div>
+  <div class="manual-panel" id="manualPanel">
+    <div class="config-row">
+      <div class="config-group">
+        <label>问题类型</label>
+        <select id="cfgType" class="type-select">
+          <option value="1">类型1：追及相遇（行程问题）</option>
+          <option value="2">类型2：函数动直线</option>
+          <option value="3">类型3：物理分段运动</option>
+          <option value="4">类型4：坐标系动点 + 面积</option>
+          <option value="5">类型5：双动点 + 几何关系</option>
+          <option value="6">类型6：图形平移 + 重叠面积</option>
+          <option value="7">类型7：自定义通用（手动配置）</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Type 1 config -->
+    <div class="config-type" id="cfgType1">
+      <div class="config-row">
+        <div class="config-group"><label>总路程 (km)</label><input id="c1_dist" type="number" value="300" step="1"></div>
+        <div class="config-group"><label>甲速度 (km/h)</label><input id="c1_v1" type="number" value="60" step="1"></div>
+        <div class="config-group"><label>乙速度 (km/h)</label><input id="c1_v2" type="number" value="90" step="1"></div>
+        <div class="config-group"><label>甲方向</label><select id="c1_dir1"><option value="1" selected>A→B</option><option value="-1">B→A</option></select></div>
+        <div class="config-group"><label>乙方向</label><select id="c1_dir2"><option value="-1" selected>B→A</option><option value="1">A→B</option></select></div>
+        <div class="config-group"><label>甲延迟 (h)</label><input id="c1_delay1" type="number" value="0" step="0.1"></div>
+        <div class="config-group"><label>乙延迟 (h)</label><input id="c1_delay2" type="number" value="0" step="0.1"></div>
+      </div>
+    </div>
+
+    <!-- Type 2 config -->
+    <div class="config-type" id="cfgType2" style="display:none">
+      <div class="config-row">
+        <div class="config-group"><label>固定曲线（每行一个表达式，如 2*x+1）</label>
+        <textarea id="c2_curves" rows="3" style="width:100%;max-width:350px;font-family:monospace;">2*x+1
+x+2</textarea></div>
+        <div class="config-group"><label>参数名</label><input id="c2_pn" value="m" style="width:60px;"></div>
+        <div class="config-group"><label>动态表达式（含参数）</label><input id="c2_de" value="m*x" style="width:120px;"></div>
+        <div class="config-group"><label>关系</label><select id="c2_rel"><option value="between" selected>介于之间</option><option value="above">大于所有</option><option value="below">小于所有</option></select></div>
+        <div class="config-group"><label>条件</label><select id="c2_op"><option value=">" selected>&gt;</option><option value="<">&lt;</option><option value=">=">≥</option><option value="<=">≤</option></select> <input id="c2_cval" type="number" value="1" step="0.5"></div>
+      </div>
+    </div>
+
+    <!-- Type 3 config -->
+    <div class="config-type" id="cfgType3" style="display:none">
+      <div class="config-row">
+        <div class="config-group"><label>分段描述（每段一行：时长s,初速m/s,加速度m/s²,标签）</label>
+        <textarea id="c3_segs" rows="4" style="width:100%;max-width:500px;font-family:inherit;">4,0,2,匀加速
+2,8,0,匀速
+4,8,-2,匀减速</textarea></div>
+      </div>
+    </div>
+
+    <!-- Type 4 config -->
+    <div class="config-type" id="cfgType4" style="display:none">
+      <div class="config-row">
+        <div class="config-group"><label>动点路径类型</label><select id="c4_path"><option value="xaxis" selected>沿x轴</option><option value="segment">线段</option></select></div>
+        <div class="config-group"><label>速度 (单位/s)</label><input id="c4_speed" type="number" value="1" step="0.1"></div>
+        <div class="config-group"><label>曲线函数 y=</label><input id="c4_func" value="x*x" style="width:150px;"></div>
+        <div class="config-group"><label>最大时间 (s)</label><input id="c4_tmax" type="number" value="5" step="0.5"></div>
+      </div>
+    </div>
+
+    <!-- Type 5 config -->
+    <div class="config-type" id="cfgType5" style="display:none">
+      <div class="config-row">
+        <div class="config-group"><label>A点坐标</label><input id="c5_ax" type="number" value="0" step="1">,<input id="c5_ay" type="number" value="0" step="1"></div>
+        <div class="config-group"><label>B点坐标</label><input id="c5_bx" type="number" value="8" step="1">,<input id="c5_by" type="number" value="0" step="1"></div>
+        <div class="config-group"><label>C点坐标</label><input id="c5_cx" type="number" value="8" step="1">,<input id="c5_cy" type="number" value="6" step="1"></div>
+        <div class="config-group"><label>P起点→终点</label><select id="c5_pe"><option value="0" selected>A</option><option value="1">B</option><option value="2">C</option></select>-<select id="c5_pe2"><option value="1" selected>B</option><option value="0">A</option><option value="2">C</option></select> 速度<input id="c5_vp" type="number" value="1" step="0.1"></div>
+        <div class="config-group"><label>Q起点→终点</label><select id="c5_qe"><option value="1" selected>B</option><option value="0">A</option><option value="2">C</option></select>-<select id="c5_qe2"><option value="2" selected>C</option><option value="0">A</option><option value="1">B</option></select> 速度<input id="c5_vq" type="number" value="2" step="0.1"></div>
+      </div>
+    </div>
+
+    <!-- Type 6 config -->
+    <div class="config-type" id="cfgType6" style="display:none">
+      <div class="config-row">
+        <div class="config-group"><label>固定图形</label><select id="c6_fixed"><option value="rect" selected>矩形</option><option value="square">正方形</option></select></div>
+        <div class="config-group"><label>宽</label><input id="c6_fw" type="number" value="6" step="1"></div>
+        <div class="config-group"><label>高</label><input id="c6_fh" type="number" value="6" step="1"></div>
+        <div class="config-group"><label>移动图形</label><select id="c6_mov"><option value="triangle" selected>等腰直角三角形</option><option value="rect">矩形</option></select></div>
+        <div class="config-group"><label>移动图形尺寸</label><input id="c6_ms" type="number" value="4" step="0.5"></div>
+        <div class="config-group"><label>速度</label><input id="c6_speed" type="number" value="2" step="0.5"></div>
+      </div>
+    </div>
+
+    <!-- Type 7 config -->
+    <div class="config-type" id="cfgType7" style="display:none">
+      <div class="config-row">
+        <div class="config-group"><label>矩形宽 b</label><input id="c7_b" type="number" value="4" step="0.5"></div>
+        <div class="config-group"><label>矩形高 a</label><input id="c7_a" type="number" value="3" step="0.5"></div>
+        <div class="config-group"><label>段1终点 t</label><input id="c7_t1" type="number" value="5" step="0.5"></div>
+        <div class="config-group"><label>段2终点 t</label><input id="c7_t2" type="number" value="8" step="0.5"></div>
+        <div class="config-group"><label>跟踪量表达式</label><input id="c7_expr" value="py-px" style="width:120px;"></div>
+        <div class="config-group"><label>跟踪量名称</label><input id="c7_name" value="PQ-DQ" style="width:80px;"></div>
+      </div>
+      <div class="config-row" style="margin-top:8px;">
+        <div class="config-group"><label>x范围</label><input id="c7_x0" type="number" value="-1" step="1">~<input id="c7_x1" type="number" value="8" step="1"></div>
+        <div class="config-group"><label>y范围</label><input id="c7_y0" type="number" value="-3" step="1">~<input id="c7_y1" type="number" value="6" step="1"></div>
+      </div>
+    </div>
+
+    <button class="btn-apply" id="btnApply">✅ 应用配置</button>
+  </div>
+</div>
+
+</div><!-- /container -->
+
+
+
+<script>
+// ============================================================
+//  DYNAMIC MATH/PHYSICS VISUALIZATION TOOL
+//  Single-file, no dependencies, requestAnimationFrame
+// ============================================================
+
+// ============ UTILITY FUNCTIONS ============
+const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
+const lerp  = (a, b, t) => a + (b - a) * t;
+const dist  = (x1, y1, x2, y2) => Math.hypot(x2 - x1, y2 - y1);
+const triArea = (x1,y1,x2,y2,x3,y3) => Math.abs((x1*(y2-y3)+x2*(y3-y1)+x3*(y1-y2))/2);
+
+/** Safely evaluate a math expression like "2*x+1", "x*x", "mx", "kx+b" */
+function evalExpr(expr, vars) {
+  // Normalize: ^ → **, implicit multiplication: 2x→2*x, mx→m*x, xy→x*y
+  let s = expr.replace(/\^/g, '**');
+  // Insert * between: digit-letter, letter-letter, digit-(, )-letter, )-(
+  s = s.replace(/(\d)([a-zA-Z\(])/g, '$1*$2');
+  s = s.replace(/([a-zA-Z\)])(\d)/g, '$1*$2');
+  s = s.replace(/([a-zA-Z\)])([a-zA-Z\(])/g, '$1*$2');
+  const keys = Object.keys(vars);
+  try {
+    const fn = new Function(...keys, `return ${s};`);
+    const vals = keys.map(k => vars[k]);
+    const result = fn(...vals);
+    return isFinite(result) ? result : NaN;
+  } catch { return NaN; }
+}
+
+/** Color palette for curves (up to 10) */
+const CURVE_COLORS = ['#5b8def','#e8836d','#5bb98c','#c4893a','#8b5cf6','#ec4899','#06b6d4','#f59e0b','#6366f1','#14b8a6'];
+
+// ============ DOM REFS ============
+const $ = id => document.getElementById(id);
+const canvas = $('mainCanvas');
+const ctx = canvas.getContext('2d');
+const CW = 800, CH = 450;
+
+/** Set up high-DPI canvas and handle responsive scaling */
+function setupHiDPI() {
+  const dpr = Math.min(window.devicePixelRatio || 1, 2); // cap at 2x for perf
+  const container = canvas.parentElement;
+  const availW = Math.min(container.clientWidth - 32, 860);
+  const cssScale = Math.min(1, availW / CW);
+
+  canvas.width = Math.round(CW * dpr);
+  canvas.height = Math.round(CH * dpr);
+  canvas.style.width = Math.round(CW * cssScale) + 'px';
+  canvas.style.height = Math.round(CH * cssScale) + 'px';
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  ctx.imageSmoothingEnabled = true;
+  ctx.imageSmoothingQuality = 'high';
+}
+setupHiDPI();
+window.addEventListener('resize', () => { setupHiDPI(); if (window._app) window._app._updateAll(); });
+
+// ============ EXAMPLE PROBLEMS ============
+const EXAMPLES = {
+  1: `A、B两地相距300km，甲从A向B以60km/h行驶，乙从B向A以90km/h行驶，同时出发。几小时后相遇？`,
+  2: `函数y=2x+1与y=x+2，在x>1时，对于每个x，y=mx的值均大于两个函数，求m的范围。`,
+  3: `某物体从静止开始，前4秒以2m/s²匀加速，接着匀速2秒，最后减速停止。请分析物体的运动。`,
+  4: `点P从原点出发沿x轴正方向以1单位/秒运动，过P作x轴垂线交抛物线y=x²于点Q。求△OPQ面积S与时间t的关系。`,
+  5: `△ABC中AB=8cm，BC=6cm，AC=10cm。动点P从A出发沿AB以1cm/s向B运动，动点Q从B出发沿BC以2cm/s向C运动，同时出发。求PQ长度的变化。`,
+  6: `等腰直角三角形的直角边长为4cm，以2cm/s速度向右平移穿过边长为6cm的正方形。求重叠部分面积S(t)的变化。`,
+  7: `【自定义模式】矩形ABCD，对角线BD，动点P从D→B→C，PQ⊥CD于Q。设路程x，y=PQ-DQ，求参数。`
+};
+
+// ============ PARSER ============
+const Parser = {
+  /** Detect problem type by keyword scoring. Returns {type, confidence} */
+  detectType(text) {
+    const scores = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0 };
+
+    // Type 1: 行程/追及相遇
+    if (/km\/h|km|相遇|追及|相向而行|同向.*行驶|同时出发/.test(text)) scores[1] += 4;
+    if (/相距\d|甲.*乙|从[AB].*向[AB]|路程|行驶.*小时/.test(text)) scores[1] += 2;
+    if (/速度|出发|到达|距离/.test(text)) scores[1] += 1;
+
+    // Type 2: 函数动态（含参数m/k/a等）
+    if (/y\s*=\s*[mk].*\s*x|y\s*=\s*[mk]x|求[mk].*范围|求[mk].*取值/.test(text)) scores[2] += 5;
+    if (/介于.*之间|均大于|恒大于|均小于|对于.*x.*值/.test(text)) scores[2] += 3;
+    if (/y\s*=\s*\d.*x.*[+\-]|函数\s*y\s*=|直线.*y\s*=/.test(text)) scores[2] += 2;
+    if (/斜率|截距|参数/.test(text) && /y\s*=/.test(text)) scores[2] += 1;
+
+    // Type 3: 物理分段运动
+    if (/s-t.*图|v-t.*图|运动图像/.test(text)) scores[3] += 5;
+    if (/前\d+\s*秒.*匀加速|先匀加速.*再匀速|先匀加速.*后匀减速/.test(text)) scores[3] += 4;
+    if (/匀加速|匀减速|m\/s²|加速度/.test(text)) scores[3] += 2;
+    if (/匀速|静止.*秒|先.*再.*最后/.test(text)) scores[3] += 1;
+
+    // Type 4: 坐标系动点+面积
+    if (/抛物线\s*y\s*=\s*x\^?2|抛物线\s*y\s*=\s*x²/.test(text)) scores[4] += 5;
+    if (/动点.*作.*垂线.*交.*于|过.*作.*x轴.*垂线/.test(text)) scores[4] += 4;
+    if (/△.*面积.*t|面积.*S.*时间|动点.*抛物线/.test(text)) scores[4] += 2;
+    if (/原点|坐标轴|单位.*运动/.test(text) && /面积/.test(text)) scores[4] += 1;
+
+    // Type 5: 双动点+几何
+    if (/△[A-Z]{3}.*动点|动点[PQ].*从.*出发.*沿.*运动/.test(text)) scores[5] += 5;
+    if (/动点.*cm\/s.*动点.*cm\/s|两个动点.*同时/.test(text)) scores[5] += 3;
+    if (/[PQ]{2}.*长度|何时.*等腰|何时.*直角/.test(text)) scores[5] += 2;
+    if (/△.*cm|动点.*运动|沿.*边.*运动/.test(text) && /cm/.test(text)) scores[5] += 1;
+
+    // Type 6: 平移重叠
+    if (/平移.*重叠.*面积|重叠部分.*面积.*平移/.test(text)) scores[6] += 5;
+    if (/等腰.*直角.*角形.*向右.*平移|矩形.*穿过|正方形.*平移/.test(text)) scores[6] += 3;
+    if (/重叠.*求.*S.*t|求.*重叠.*面积/.test(text)) scores[6] += 2;
+    if (/向右.*移动|平移.*速度/.test(text) && /重叠|穿过/.test(text)) scores[6] += 1;
+
+    // Type 7: geometry + moving point (矩形/△ + 动点 + 对角线/垂线)
+    if (/矩形.*动点|动点.*矩形|△.*动点|动点.*△/.test(text)) scores[7] += 6;
+    if (/矩形.*对角线|对角线.*矩形/.test(text)) scores[7] += 4;
+    if (/动点.*出发.*沿|沿.*路径.*行进|动点.*从.*向/.test(text)) scores[7] += 3;
+    if (/垂足|垂线|⊥|⟂/.test(text)) scores[7] += 2;
+
+    const entries = Object.entries(scores).sort((a,b) => b[1] - a[1]);
+    const best = entries[0], second = entries[1] || ['0',0];
+    const total = Object.values(scores).reduce((a,b)=>a+b, 0);
+    let confidence;
+    if (best[1] >= 5 && best[1] > second[1] + 2) confidence = 'high';
+    else if (best[1] >= 3) confidence = 'medium';
+    else confidence = total > 0 ? 'low' : 'low';
+
+    return { type: best[1] > 0 ? parseInt(best[0]) : 1, confidence };
+  },
+
+  /** Extract all numbers from text, with optional unit parsing */
+  extractNumbers(text) {
+    const nums = [];
+    const re = /(\d+(?:\.\d+)?)\s*(km\/h|m\/s|cm\/s|km|m|cm|h|s|min|m\/s²)?/g;
+    let m;
+    while ((m = re.exec(text)) !== null) {
+      nums.push({ value: parseFloat(m[1]), unit: m[2] || '', index: m.index });
+    }
+    return nums;
+  },
+
+  /** Parse a linear equation: y = kx + b or y = kx */
+  parseLinearEq(text) {
+    // Match: y = [k]x [+ b]  (k and b can be negative, decimals, fractions)
+    const re = /y\s*=\s*([+-]?\d*\.?\d*)\s*x\s*([+-]\s*\d*\.?\d*)?/;
+    const m = text.match(re);
+    if (!m) return { k: 1, b: 0 };
+    const k = parseFloat(m[1]) || (m[1] === '-' ? -1 : 1);
+    const b = m[2] ? parseFloat(m[2].replace(/\s+/g, '')) : 0;
+    return { k, b };
+  },
+
+  /** Full parse: text → Problem object */
+  parse(text) {
+    const { type, confidence } = this.detectType(text);
+    const base = { type, confidence, title: '', raw: text };
+    let problem = null;
+
+    switch (type) {
+      case 1: problem = this.parseType1(text, base); break;
+      case 2: problem = this.parseType2(text, base); break;
+      case 3: problem = this.parseType3(text, base); break;
+      case 4: problem = this.parseType4(text, base); break;
+      case 5: problem = this.parseType5(text, base); break;
+      case 6: problem = this.parseType6(text, base); break;
+      case 7: problem = this.parseType7(text, base); break;
+    }
+
+    if (!problem) {
+      // Fallback to type 1 with defaults
+      return { ...base, type: 1, confidence: 'low', title: '默认行程问题',
+        distance: 300, objects: [
+          { name: '甲', speed: 60, startPos: 0, direction: 1, delay: 0 },
+          { name: '乙', speed: 90, startPos: 300, direction: -1, delay: 0 }
+        ], unitDist: 'km', unitTime: 'h' };
+    }
+    return problem;
+  },
+
+  parseType1(text, base) {
+    const nums = Parser.extractNumbers(text);
+    const speeds = nums.filter(n => n.unit === 'km/h' || n.unit === 'm/s');
+    const distances = nums.filter(n => n.unit === 'km' || n.unit === 'm' || n.unit === 'cm');
+
+    let distance = 100, v1 = 60, v2 = 40, dir1 = 1, dir2 = -1, delay1 = 0, delay2 = 0;
+
+    if (distances.length >= 1) distance = distances[0].value;
+    if (speeds.length >= 2) { v1 = speeds[0].value; v2 = speeds[1].value; }
+    else if (speeds.length === 1) v1 = speeds[0].value;
+
+    // Detect directions
+    if (/从[AB].*向[AB]/.test(text)) {
+      const dirMatches = text.match(/从([AB]).*向([AB])/g);
+      if (dirMatches) {
+        if (dirMatches.length >= 1 && /从A.*向B/.test(dirMatches[0])) dir1 = 1; else if (/从B.*向A/.test(dirMatches[0])) dir1 = -1;
+        if (dirMatches.length >= 2 && /从A.*向B/.test(dirMatches[1])) dir2 = 1; else if (/从B.*向A/.test(dirMatches[1])) dir2 = -1;
+      }
+    }
+    if (/相向|相对/.test(text)) { dir1 = 1; dir2 = -1; }
+    if (/同向|追及|追上/.test(text)) { dir1 = 1; dir2 = 1; }
+
+    // Detect delays
+    const delayMatch1 = text.match(/甲.*?(\d+(?:\.\d+)?)\s*(h|小时|min|分钟).*?(?:后|出发|开始)/);
+    const delayMatch2 = text.match(/乙.*?(\d+(?:\.\d+)?)\s*(h|小时|min|分钟).*?(?:后|出发|开始)/);
+    if (delayMatch1) delay1 = parseFloat(delayMatch1[1]) * (delayMatch1[2] === 'min' || delayMatch1[2] === '分钟' ? 1/60 : 1);
+    if (delayMatch2) delay2 = parseFloat(delayMatch2[1]) * (delayMatch2[2] === 'min' || delayMatch2[2] === '分钟' ? 1/60 : 1);
+
+    // Calculate meeting time (if opposite direction)
+    // position1 = dir1 * v1 * (t - delay1) [starting from correct end]
+    // position2 = distance - (dir2 == 1 ? 0 : distance) + dir2 * v2 * (t - delay2)
+    // For opposite: 甲 from A(pos 0) to B, 乙 from B(pos distance) to A
+    // pos1 = v1 * (t - delay1) (if dir1==1), pos2 = distance - v2 * (t - delay2) (if dir2==-1)
+    // Meeting: pos1 = pos2
+
+    return {
+      ...base, type: 1, title: '追及相遇问题',
+      distance, unitDist: distances[0]?.unit || 'km', unitTime: 'h',
+      objects: [
+        { name: '甲', speed: v1, startPos: 0, direction: dir1, delay: delay1, color: '#b5583d' },
+        { name: '乙', speed: v2, startPos: distance, direction: dir2, delay: delay2, color: '#3a7d5e' }
+      ]
+    };
+  },
+
+  parseType2(text, base) {
+    // --- Extract all function expressions ---
+    // Match: y = [math expression with letters, digits, operators]
+    const exprRe = /y\s*=\s*([a-zA-Z0-9\*\-\+\/\^\.\(\)]+)/gi;
+    const rawExprs = [];
+    let em;
+    while ((em = exprRe.exec(text)) !== null) {
+      rawExprs.push(em[1].replace(/\s+/g, ''));
+    }
+
+    // Detect parameter letter (m, k, a, t, p)
+    let paramName = 'm';
+    const paramMatch = text.match(/([mkapt])\s*\*/) || text.match(/y\s*=\s*([mkapt])\s*x/i) || text.match(/y\s*=\s*([mkapt])x/i);
+    if (paramMatch) paramName = paramMatch[1];
+
+    // Split into fixed curves and dynamic expression
+    const curves = [];
+    let dynExpr = paramName + '*x'; // default
+
+    rawExprs.forEach((expr, i) => {
+      // Check if this expression contains the parameter
+      if (expr.includes(paramName)) {
+        dynExpr = expr;
+      } else {
+        curves.push({ expr: expr, label: `f${String.fromCharCode(8320 + curves.length)}`, color: CURVE_COLORS[curves.length % CURVE_COLORS.length] });
+      }
+    });
+
+    // If no fixed curves found, try to extract from context
+    if (curves.length === 0) {
+      // Look for standalone expressions without "y="
+      const altRe = /([+-]?\d*\.?\d*\s*\*\s*x\s*[+\-]\s*\d+\.?\d*|[+-]?\d*\.?\d*x\s*[+\-]\s*\d+\.?\d*)/g;
+      let am;
+      while ((am = altRe.exec(text)) !== null) {
+        const e = am[1].replace(/\s+/g, '');
+        if (!e.includes(paramName)) {
+          curves.push({ expr: e, label: `f${String.fromCharCode(8320 + curves.length)}`, color: CURVE_COLORS[curves.length % CURVE_COLORS.length] });
+        }
+      }
+    }
+
+    // Still empty? defaults
+    if (curves.length === 0) {
+      curves.push({ expr: '2*x+1', label: 'f₁', color: CURVE_COLORS[0] });
+      curves.push({ expr: 'x+2', label: 'f₂', color: CURVE_COLORS[1] });
+    }
+
+    // --- Parse condition ---
+    let condVar = 'x', condOp = '>', condVal = 1;
+    const condMatch = text.match(/([xy])\s*([><]=?|≥|≤)\s*(\d+\.?\d*)/);
+    if (condMatch) {
+      condVar = condMatch[1]; condOp = condMatch[2].replace('≥','>=').replace('≤','<='); condVal = parseFloat(condMatch[3]);
+    }
+
+    // --- Detect relationship type ---
+    let relType = 'between';
+    if (/均大于|大于.*且.*大于|恒大于|大于.*都|总大于/.test(text)) relType = 'above';
+    else if (/均小于|小于.*且.*小于|恒小于|小于.*都/.test(text)) relType = 'below';
+    else if (/介于.*之间|大于前者.*小于后者|大于.*小于|小于前者.*大于后者/.test(text)) relType = 'between';
+
+    // --- Compute parameter range ---
+    let pMin = -Infinity, pMax = Infinity;
+    const testVals = [];
+    for (let i = 1; i <= 60; i++) testVals.push(condVal + i * 0.02);
+    testVals.push(condVal + 2, condVal + 5, condVal + 10, condVal + 50, condVal + 200);
+    const lowerBs = [], upperBs = [];
+
+    testVals.forEach(x => {
+      let valid = false;
+      if (condOp === '>' || condOp === '>=') valid = x > condVal || (condOp === '>=' && x >= condVal);
+      else if (condOp === '<' || condOp === '<=') valid = x < condVal || (condOp === '<=' && x <= condVal);
+      if (!valid || x === 0) return;
+
+      // Evaluate all fixed curves at x
+      const curveYs = curves.map(c => evalExpr(c.expr, {x}));
+      const validYs = curveYs.filter(y => isFinite(y));
+      if (validYs.length === 0) return;
+
+      const lo = Math.min(...validYs), hi = Math.max(...validYs);
+
+      if (relType === 'between') {
+        // param*x must be between min and max of all curves
+        lowerBs.push(lo / x);
+        upperBs.push(hi / x);
+      } else if (relType === 'above') {
+        // param expression must be > max of all curves
+        // For linear param*x: m > max(y_i)/x
+        lowerBs.push(hi / x);
+      } else if (relType === 'below') {
+        upperBs.push(lo / x);
+      }
+    });
+
+    if (relType === 'between' || relType === 'above') pMin = lowerBs.length > 0 ? Math.max(...lowerBs) : -Infinity;
+    if (relType === 'between' || relType === 'below') pMax = upperBs.length > 0 ? Math.min(...upperBs) : Infinity;
+    if (!isFinite(pMin)) pMin = -20;
+    if (!isFinite(pMax)) pMax = 20;
+
+    // --- Compute viewport ---
+    const xMin = Math.min(0, condVal) - 2, xMax = Math.max(condVal + 4, 6);
+    const sampleXs = [];
+    for (let i = 0; i <= 50; i++) sampleXs.push(xMin + (i/50)*(xMax - xMin));
+    let yMinV = Infinity, yMaxV = -Infinity;
+    sampleXs.forEach(x => {
+      curves.forEach(c => {
+        const y = evalExpr(c.expr, {x});
+        if (isFinite(y)) { yMinV = Math.min(yMinV, y); yMaxV = Math.max(yMaxV, y); }
+      });
+      if (isFinite(pMin)) { const y = evalExpr(dynExpr, {x, [paramName]: pMin}); if (isFinite(y)) { yMinV=Math.min(yMinV,y); yMaxV=Math.max(yMaxV,y); } }
+      if (isFinite(pMax)) { const y = evalExpr(dynExpr, {x, [paramName]: pMax}); if (isFinite(y)) { yMinV=Math.min(yMinV,y); yMaxV=Math.max(yMaxV,y); } }
+    });
+    const yPad = Math.max((yMaxV - yMinV) * 0.25, 3);
+    const yRange = [yMinV - yPad, yMaxV + yPad];
+    const xRange = [xMin, xMax];
+
+    const relNames = { between: '函数动态范围（介于曲线之间）', above: '函数动态范围（恒大于曲线）', below: '函数动态范围（恒小于曲线）' };
+
+    return {
+      ...base, type: 2, title: relNames[relType] || '函数动态问题',
+      curves, dynExpr, paramName, relType,
+      condition: { var: condVar, op: condOp, value: condVal },
+      paramRange: { min: pMin, max: pMax },
+      xRange, yRange
+    };
+  },
+
+  parseType3(text, base) {
+    const segments = [];
+    // Pattern: 前N秒/先N秒...运动描述
+    const phaseRe = /(前|先|第|头|开始|接着|然后|之后|最后|再)\s*(\d+)\s*(秒|s|分钟|min|小时|h)\s*[^，。,.]*?(匀速|静止|匀加速|匀减速|加速|减速|运动|行驶|移动)/g;
+    let m;
+    while ((m = phaseRe.exec(text)) !== null) {
+      const dur = parseFloat(m[2]);
+      let v0 = 0, a = 0, label = m[4];
+      if (/匀加速|加速/.test(m[4])) {
+        // Try to find acceleration value
+        const accMatch = text.slice(m.index).match(/(\d+(?:\.\d+)?)\s*m\/s²/);
+        a = accMatch ? parseFloat(accMatch[1]) : 2;
+        label = '匀加速';
+      } else if (/匀减速|减速/.test(m[4])) {
+        const accMatch = text.slice(m.index).match(/(\d+(?:\.\d+)?)\s*m\/s²/);
+        a = accMatch ? -parseFloat(accMatch[1]) : -2;
+        label = '匀减速';
+      } else if (/静止/.test(m[4])) {
+        v0 = 0; a = 0; label = '静止';
+      } else {
+        // 匀速: try to find speed
+        const spMatch = text.slice(m.index).match(/(\d+(?:\.\d+)?)\s*m\/s/);
+        v0 = spMatch ? parseFloat(spMatch[1]) : 2;
+        a = 0; label = '匀速';
+      }
+      segments.push({ duration: dur, v0, a, label });
+    }
+
+    if (segments.length === 0) {
+      // Fallback: create default segments
+      segments.push(
+        { duration: 4, v0: 0, a: 2, label: '匀加速' },
+        { duration: 2, v0: 8, a: 0, label: '匀速' },
+        { duration: 4, v0: 8, a: -2, label: '匀减速' }
+      );
+    }
+
+    // Fill in v0 for segments after the first (based on previous segment's final velocity)
+    for (let i = 1; i < segments.length; i++) {
+      const prev = segments[i - 1];
+      const prevFinalV = prev.v0 + prev.a * prev.duration;
+      if (segments[i].a !== 0 && segments[i].v0 === 0) {
+        segments[i].v0 = prevFinalV;
+      }
+    }
+
+    const totalTime = segments.reduce((s, seg) => s + seg.duration, 0);
+    // Calculate total distance
+    let totalDist = 0;
+    segments.forEach(seg => {
+      totalDist += seg.v0 * seg.duration + 0.5 * seg.a * seg.duration * seg.duration;
+    });
+
+    return {
+      ...base, type: 3, title: '物理分段运动',
+      segments, totalTime, totalDistance: Math.max(totalDist, 1),
+      unitDist: 'm', unitTime: 's'
+    };
+  },
+
+  parseType4(text, base) {
+    const nums = Parser.extractNumbers(text);
+    let speed = 1, curveFunc = 'x*x', tMax = 5;
+
+    // Find speed
+    const speedMatch = text.match(/(\d+(?:\.\d+)?)\s*(单位\/秒|单位\/s|单位\/秒|m\/s)/);
+    if (speedMatch) speed = parseFloat(speedMatch[1]);
+
+    // Find curve
+    if (/y\s*=\s*x\^?2|y\s*=\s*x²|抛物线.*y.*x/.test(text)) curveFunc = 'x*x';
+    else if (/y\s*=\s*2x|y\s*=\s*2\s*x/.test(text)) curveFunc = '2*x';
+    else if (/y\s*=\s*0\.5|y\s*=\s*1\/2/.test(text)) curveFunc = '0.5*x';
+
+    // Find max time
+    const tMatch = text.match(/前\s*(\d+)\s*(秒|s)/);
+    if (tMatch) tMax = parseFloat(tMatch[1]);
+
+    return {
+      ...base, type: 4, title: '坐标系动点与面积',
+      pathType: 'xaxis', speed, curveFunc, tMax,
+      unitDist: '', unitTime: 's'
+    };
+  },
+
+  parseType5(text, base) {
+    const nums = Parser.extractNumbers(text);
+    let ax = 0, ay = 0, bx = 8, by = 0, cx = 8, cy = 6;
+    let vp = 1, vq = 2;
+    let pStart = 0, pEnd = 1, qStart = 1, qEnd = 2; // indices into vertices
+
+    // Try to extract triangle side lengths: AB=n, BC=n, AC=n
+    const abMatch = text.match(/AB\s*[=＝]\s*(\d+\.?\d*)/);
+    const bcMatch = text.match(/BC\s*[=＝]\s*(\d+\.?\d*)/);
+    const acMatch = text.match(/AC\s*[=＝]\s*(\d+\.?\d*)/);
+    const ab = abMatch ? parseFloat(abMatch[1]) : 8;
+    const bc = bcMatch ? parseFloat(bcMatch[1]) : 6;
+    const ac = acMatch ? parseFloat(acMatch[1]) : 10;
+
+    // Place triangle: A(0,0), B(ab,0), C determined by bc and ac
+    bx = ab;
+    // C = (x,y): dist from A = ac, dist from B = bc
+    const x = (ab*ab + ac*ac - bc*bc) / (2*ab);
+    const y = Math.sqrt(Math.max(0, ac*ac - x*x));
+    cx = x; cy = y;
+
+    // Speed extraction
+    const vpMatch = text.match(/[Pp].*?(\d+\.?\d*)\s*(cm\/s|单位\/s)/);
+    const vqMatch = text.match(/[Qq].*?(\d+\.?\d*)\s*(cm\/s|单位\/s)/);
+    if (vpMatch) vp = parseFloat(vpMatch[1]);
+    if (vqMatch) vq = parseFloat(vqMatch[1]);
+
+    return {
+      ...base, type: 5, title: '双动点与几何关系',
+      vertices: [{x:ax,y:ay,l:'A'},{x:bx,y:by,l:'B'},{x:cx,y:cy,l:'C'}],
+      pointP: { startIdx: pStart, endIdx: pEnd, speed: vp, color: '#b5583d', name: 'P' },
+      pointQ: { startIdx: qStart, endIdx: qEnd, speed: vq, color: '#3a7d5e', name: 'Q' },
+      unitDist: 'cm', unitTime: 's'
+    };
+  },
+
+  parseType6(text, base) {
+    const nums = Parser.extractNumbers(text);
+    let fixedW = 6, fixedH = 6, movSize = 4, speed = 2;
+
+    if (nums.length >= 1 && !nums[0].unit) fixedW = nums[0].value;
+    if (nums.length >= 2 && !nums[1].unit) movSize = nums[1].value;
+    if (nums.length >= 3 && !nums[2].unit) speed = nums[2].value;
+
+    // Detect shapes from text
+    const fixedType = /正方形/.test(text) ? 'square' : 'rect';
+    if (fixedType === 'square') fixedH = fixedW;
+    const movType = /等腰直角/.test(text) || /直角.*角/.test(text) ? 'triangle' : 'rect';
+
+    const totalTime = (fixedW + movSize) / speed + 1;
+
+    return {
+      ...base, type: 6, title: '图形平移与重叠面积',
+      fixed: { type: fixedType, w: fixedW, h: fixedH, color: '#667788' },
+      moving: { type: movType, size: movSize, speed, startX: -movSize - 1, color: '#b5583d' },
+      totalTime, unitDist: 'cm', unitTime: 's'
+    };
+  },
+
+  parseType7(text, base) {
+    // Auto-extract geometry from OCR text: rectangle, vertices, moving point, path
+    const r = {
+      ...base, type: 7, title: '几何动点问题',
+      xRange: [-1, 8], yRange: [-3, 6], tMax: 10, paramName: 't',
+      shapes: [], fixPoints: [], pathSegs: [],
+      trackedExpr: 'py-px', trackedName: 'y',
+      unitDist: '', unitTime: 's'
+    };
+
+    // 1. Rectangle detection: "矩形ABCD" → place A(0,h) B(w,h) C(w,0) D(0,0)
+    const rectM = text.match(/矩形\s*([A-Z])([A-Z])([A-Z])([A-Z])/);
+    let w = 4, h = 3;
+    if (rectM) {
+      const [_, v1, v2, v3, v4] = rectM;
+      // Try to extract dimensions from text
+      const abM = text.match(/AB\s*[=＝]\s*(\d+\.?\d*)/);
+      const bcM = text.match(/BC\s*[=＝]\s*(\d+\.?\d*)/);
+      const adM = text.match(/AD\s*[=＝]\s*(\d+\.?\d*)/);
+      const cdM = text.match(/CD\s*[=＝]\s*(\d+\.?\d*)/);
+      if (abM) w = parseFloat(abM[1]);
+      if (bcM) h = parseFloat(bcM[1]);
+      if (adM) h = parseFloat(adM[1]);
+      if (cdM) w = parseFloat(cdM[1]);
+
+      r.shapes = [{ type: 'rect', x: 0, y: 0, w, h, color: '#5b8def', label: `${v1}${v2}${v3}${v4}` }];
+      // Standard: A top-left, B top-right, C bottom-right, D bottom-left
+      r.fixPoints = [
+        { x: 0, y: 0, color: '#5bb98c', label: v4 },
+        { x: w, y: 0, color: '#5bb98c', label: v3 },
+        { x: w, y: h, color: '#5bb98c', label: v2 },
+        { x: 0, y: h, color: '#5bb98c', label: v1 }
+      ];
+      r.xRange = [-1, w + 3]; r.yRange = [-1, h + 3];
+    }
+
+    // 2. Moving point & path: "动点P从D出发沿着D→B→C"
+    const mvMatch = text.match(/动点\s*([A-Z])\s*从\s*([A-Z])\s*出发.*?沿[着]?\s*([A-Z])[→―>-]\s*([A-Z])(?:[→―>-]\s*([A-Z]))?/);
+    if (mvMatch) {
+      const mvLabel = mvMatch[1];
+      const pathLabels = [mvMatch[2], mvMatch[3], mvMatch[4]];
+      if (mvMatch[5]) pathLabels.push(mvMatch[5]);
+
+      const getCoord = (lbl) => r.fixPoints.find(p => p.label === lbl) || null;
+
+      r.pathSegs = [];
+      let tAcc = 0;
+      for (let i = 0; i < pathLabels.length - 1; i++) {
+        const from = getCoord(pathLabels[i]), to = getCoord(pathLabels[i + 1]);
+        const segLen = (from && to) ? Math.hypot(to.x - from.x, to.y - from.y) : 5;
+        tAcc += segLen;
+        r.pathSegs.push({ tEnd: Math.round(tAcc * 10) / 10 });
+      }
+      r.tMax = tAcc || 10;
+
+      // Mark moving point at starting position
+      const startP = getCoord(pathLabels[0]);
+      if (startP && !r.fixPoints.find(q => q.label === mvLabel)) {
+        r.fixPoints.push({ x: startP.x, y: startP.y, color: '#e8836d', label: mvLabel + ' (动)' });
+      }
+    }
+
+    // 3. Tracked quantity: "y = PQ-DQ" or "PQ-DQ为y"
+    const trackM = text.match(/([A-Z]{2})\s*[–－-]\s*([A-Z]{2})\s*为\s*([yY])/);
+    const trackM2 = text.match(/([yY])\s*[=＝]\s*(\S+?)\s*[–－-]\s*(\S+)/);
+    if (trackM) {
+      r.trackedName = trackM[3];
+      r.trackedExpr = `${trackM[1].toLowerCase()}-${trackM[2].toLowerCase()}`;
+    } else if (trackM2) {
+      r.trackedName = trackM2[1];
+      r.trackedExpr = `${trackM2[2].toLowerCase()}-${trackM2[3].toLowerCase()}`;
+    }
+    // Normalize: PQ→py, DQ→px, etc
+    r.trackedExpr = r.trackedExpr.replace(/pq/gi,'py').replace(/dq/gi,'px').replace(/[–－—]/g,'-');
+
+    r.title = r.shapes.length ? '几何动点问题（自动识别）' : '自定义动态问题';
+    return r;
+  }
+};
+
+// ============ ANIMATION STATE ============
+class AnimState {
+  constructor() {
+    this.problem = null;
+    this.t = 0;        // current time (for types 1,3,4,5,6)
+    this.param = 0;     // current parameter (for type 2: m value)
+    this.playing = false;
+    this.speed = 1;
+    this.lastTs = 0;
+  }
+
+  load(problem) {
+    this.problem = problem;
+    this.t = 0;
+    this.param = problem.type === 2 ? problem.paramRange.min : 0;
+    this.playing = false;
+  }
+
+  getTotalRange() {
+    const p = this.problem;
+    if (!p) return 100;
+    switch (p.type) {
+      case 1: return this._calcMeetingTime() * 1.3 || 10;
+      case 2: { const r = p.paramRange; const s = (isFinite(r.max)?r.max:10) - (isFinite(r.min)?r.min:-10); return Math.max(Math.abs(s), 1); }
+      case 3: return p.totalTime;
+      case 4: return p.tMax;
+      case 5: return this._calcMaxTime5();
+      case 6: return p.totalTime;
+      case 7: return p.tMax || 10;
+      default: return 10;
+    }
+  }
+
+  getCurrentValue() {
+    return this.problem?.type === 2 ? this.param : this.t;
+  }
+
+  setCurrentValue(v) {
+    if (this.problem?.type === 2) this.param = v;
+    else this.t = v;
+  }
+
+  /** Get full snapshot of current state for rendering */
+  getSnapshot() {
+    const p = this.problem;
+    if (!p) return null;
+    switch (p.type) {
+      case 1: return this._snap1();
+      case 2: return this._snap2();
+      case 3: return this._snap3();
+      case 4: return this._snap4();
+      case 5: return this._snap5();
+      case 6: return this._snap6();
+      case 7: return this._snap7();
+      default: return null;
+    }
+  }
+
+  // --- Type 1: 追及相遇 ---
+  _calcMeetingTime() {
+    const p = this.problem;
+    const o1 = p.objects[0], o2 = p.objects[1];
+    // o1 from startPos=0 with dir=1: pos = o1.speed * (t - o1.delay)
+    // o2 from startPos=distance with dir=-1: pos = distance - o2.speed * (t - o2.delay)
+    // Meeting: o1.speed*(t-o1.delay) = distance - o2.speed*(t-o2.delay)
+    // o1.speed*t - o1.speed*o1.delay = distance - o2.speed*t + o2.speed*o2.delay
+    // t*(o1.speed + o2.speed) = distance + o1.speed*o1.delay + o2.speed*o2.delay
+    const num = p.distance + o1.speed * o1.delay + o2.speed * o2.delay;
+    const den = o1.speed + o2.speed;
+    return den > 0 ? num / den : 10;
+  }
+
+  _pos1(t) {
+    const o = this.problem.objects[0];
+    if (t < o.delay) return o.startPos;
+    return o.startPos + o.direction * o.speed * (t - o.delay);
+  }
+
+  _pos2(t) {
+    const o = this.problem.objects[1];
+    if (t < o.delay) return o.startPos;
+    return o.startPos + o.direction * o.speed * (t - o.delay);
+  }
+
+  _snap1() {
+    const p = this.problem;
+    const meetingT = this._calcMeetingTime();
+    const pos1 = this._pos1(this.t), pos2 = this._pos2(this.t);
+    const remaining = Math.abs(pos2 - pos1);
+    return {
+      objects: [
+        { name: p.objects[0].name, pos: pos1, color: p.objects[0].color, active: this.t >= p.objects[0].delay },
+        { name: p.objects[1].name, pos: pos2, color: p.objects[1].color, active: this.t >= p.objects[1].delay }
+      ],
+      meetingTime: meetingT, t: this.t,
+      remaining,
+      totalDist: p.distance,
+      isMeeting: Math.abs(remaining) < Math.max(0.02 * p.distance, 0.1)
+    };
+  }
+
+  // --- Type 2: 函数动直线 ---
+  _snap2() {
+    const p = this.problem;
+    const paramVal = this.param;
+    const relType = p.relType || 'between';
+    const pMin = p.paramRange.min, pMax = p.paramRange.max;
+    const curves = p.curves || [];
+    const dynExpr = p.dynExpr || (p.paramName + '*x');
+    const paramName = p.paramName || 'm';
+
+    let inRange;
+    if (relType === 'above') inRange = isFinite(pMin) ? paramVal > pMin : true;
+    else if (relType === 'below') inRange = isFinite(pMax) ? paramVal < pMax : true;
+    else inRange = paramVal >= pMin && paramVal <= pMax;
+
+    const testXs = [p.condition.value + 0.1, p.condition.value + 0.5, p.condition.value + 1, p.condition.value + 3];
+    let satisfied = 0, total = 0;
+    testXs.forEach(x => {
+      if (p.condition.op === '>' && x <= p.condition.value) return;
+      if (p.condition.op === '<' && x >= p.condition.value) return;
+      if (p.condition.op === '>=' && x < p.condition.value) return;
+      if (p.condition.op === '<=' && x > p.condition.value) return;
+      total++;
+      const curveYs = curves.map(c => evalExpr(c.expr, {x})).filter(y => isFinite(y));
+      const dynY = evalExpr(dynExpr, {x, [paramName]: paramVal});
+      if (!isFinite(dynY) || curveYs.length === 0) return;
+      const lo = Math.min(...curveYs), hi = Math.max(...curveYs);
+      if (relType === 'above') { if (dynY > hi) satisfied++; }
+      else if (relType === 'below') { if (dynY < lo) satisfied++; }
+      else { if (dynY > lo && dynY < hi) satisfied++; }
+    });
+
+    return { paramVal, inRange, pMin, pMax, relType, satisfied, total, paramName, dynExpr, curves };
+  }
+
+  // --- Type 3: 分段运动 ---
+  _getSegmentAt(t) {
+    const p = this.problem;
+    let accTime = 0;
+    for (let i = 0; i < p.segments.length; i++) {
+      const seg = p.segments[i];
+      const segStart = accTime;
+      accTime += seg.duration;
+      if (t <= accTime || i === p.segments.length - 1) {
+        const localT = clamp(t - segStart, 0, seg.duration);
+        // pos within segment: s = s_start + v0*localT + 0.5*a*localT²
+        let sStart = 0;
+        for (let j = 0; j < i; j++) {
+          const sj = p.segments[j];
+          sStart += sj.v0 * sj.duration + 0.5 * sj.a * sj.duration * sj.duration;
+        }
+        const s = sStart + seg.v0 * localT + 0.5 * seg.a * localT * localT;
+        const v = seg.v0 + seg.a * localT;
+        return { index: i, seg, localT, s, v, sStart, segStart, segEnd: accTime };
+      }
+    }
+    // Past end
+    const last = p.segments[p.segments.length - 1];
+    let sTotal = 0;
+    p.segments.forEach(sj => { sTotal += sj.v0 * sj.duration + 0.5 * sj.a * sj.duration * sj.duration; });
+    return { index: p.segments.length - 1, seg: last, localT: last.duration, s: sTotal, v: last.v0 + last.a * last.duration,
+      sStart: sTotal - (last.v0 * last.duration + 0.5 * last.a * last.duration * last.duration),
+      segStart: p.totalTime - last.duration, segEnd: p.totalTime };
+  }
+
+  _snap3() {
+    const p = this.problem;
+    const segInfo = this._getSegmentAt(clamp(this.t, 0, p.totalTime));
+    // Compute s-t data points
+    const stPoints = [];
+    const nPts = 100;
+    for (let i = 0; i <= nPts; i++) {
+      const ti = (i / nPts) * p.totalTime;
+      const si = this._getSegmentAt(ti);
+      stPoints.push({ t: ti, s: si.s });
+    }
+    // Compute v-t data points
+    const vtPoints = [];
+    for (let i = 0; i <= nPts; i++) {
+      const ti = (i / nPts) * p.totalTime;
+      const si = this._getSegmentAt(ti);
+      vtPoints.push({ t: ti, v: si.v });
+    }
+    return {
+      segInfo, stPoints, vtPoints,
+      totalTime: p.totalTime, totalDist: p.totalDistance,
+      isFinished: this.t >= p.totalTime
+    };
+  }
+
+  // --- Type 4: 坐标系动点+面积 ---
+  _snap4() {
+    const p = this.problem;
+    const t = clamp(this.t, 0, p.tMax);
+    const px = t, py = 0;
+    // Evaluate curve function at x = t
+    let qy;
+    try {
+      qy = Function('x', `return ${p.curveFunc};`)(t);
+    } catch { qy = t * t; }
+    if (!isFinite(qy)) qy = t * t;
+    const area = triArea(0, 0, px, py, px, qy); // △OPQ: O(0,0), P(t,0), Q(t,qy)
+
+    // Area-time data
+    const atPoints = [];
+    const nPts = 100;
+    for (let i = 0; i <= nPts; i++) {
+      const ti = (i / nPts) * p.tMax;
+      let qyi;
+      try { qyi = Function('x', `return ${p.curveFunc};`)(ti); } catch { qyi = ti * ti; }
+      atPoints.push({ t: ti, a: triArea(0, 0, ti, 0, ti, qyi) });
+    }
+
+    return {
+      t, px, py, qx: px, qy, area,
+      areaTimeData: atPoints, maxArea: Math.max(...atPoints.map(d => d.a), 1),
+      tMax: p.tMax
+    };
+  }
+
+  // --- Type 5: 双动点+几何关系 ---
+  _calcMaxTime5() {
+    const p = this.problem;
+    const verts = p.vertices;
+    const pDist = dist(verts[p.pointP.startIdx].x, verts[p.pointP.startIdx].y,
+                        verts[p.pointP.endIdx].x, verts[p.pointP.endIdx].y);
+    const qDist = dist(verts[p.pointQ.startIdx].x, verts[p.pointQ.startIdx].y,
+                        verts[p.pointQ.endIdx].x, verts[p.pointQ.endIdx].y);
+    return Math.max(pDist / (p.pointP.speed || 0.1), qDist / (p.pointQ.speed || 0.1));
+  }
+
+  _snap5() {
+    const p = this.problem;
+    const verts = p.vertices;
+    const tMax = this._calcMaxTime5();
+    const t = clamp(this.t, 0, tMax);
+
+    // P position
+    const pStart = verts[p.pointP.startIdx], pEnd = verts[p.pointP.endIdx];
+    const pTotalDist = dist(pStart.x, pStart.y, pEnd.x, pEnd.y);
+    const pFrac = clamp((t * p.pointP.speed) / pTotalDist, 0, 1);
+    const px = lerp(pStart.x, pEnd.x, pFrac);
+    const py = lerp(pStart.y, pEnd.y, pFrac);
+
+    // Q position
+    const qStart = verts[p.pointQ.startIdx], qEnd = verts[p.pointQ.endIdx];
+    const qTotalDist = dist(qStart.x, qStart.y, qEnd.x, qEnd.y);
+    const qFrac = clamp((t * p.pointQ.speed) / qTotalDist, 0, 1);
+    const qxF = lerp(qStart.x, qEnd.x, qFrac);
+    const qyF = lerp(qStart.y, qEnd.y, qFrac);
+
+    const pqDist = dist(px, py, qxF, qyF);
+
+    // PQ-time data
+    const pqPoints = [];
+    const nPts = 100;
+    for (let i = 0; i <= nPts; i++) {
+      const ti = (i / nPts) * tMax;
+      const pf = clamp((ti * p.pointP.speed) / pTotalDist, 0, 1);
+      const qf = clamp((ti * p.pointQ.speed) / qTotalDist, 0, 1);
+      const pxi = lerp(pStart.x, pEnd.x, pf), pyi = lerp(pStart.y, pEnd.y, pf);
+      const qxi = lerp(qStart.x, qEnd.x, qf), qyi = lerp(qStart.y, qEnd.y, qf);
+      pqPoints.push({ t: ti, d: dist(pxi, pyi, qxi, qyi) });
+    }
+
+    return {
+      t, tMax,
+      pPos: { x: px, y: py }, qPos: { x: qxF, y: qyF },
+      pqDist, pqPoints,
+      vertices: verts
+    };
+  }
+
+  // --- Type 6: 图形平移+重叠 ---
+  _snap6() {
+    const p = this.problem;
+    const t = clamp(this.t, 0, p.totalTime);
+    const movX = p.moving.startX + p.moving.speed * t;
+
+    // Compute overlap area between moving shape and fixed rect
+    let overlapArea = 0;
+    const fw = p.fixed.w, fh = p.fixed.h; // fixed rect: [0,fw] x [0,fh]
+
+    if (p.moving.type === 'rect') {
+      const mw = p.moving.size, mh = p.moving.size;
+      const ox = Math.max(0, movX), oy = Math.max(0, 0);
+      const ow = Math.max(0, Math.min(movX + mw, fw) - ox);
+      const oh = Math.max(0, Math.min(mh, fh) - oy);
+      overlapArea = ow * oh;
+    } else if (p.moving.type === 'triangle') {
+      // Right isosceles triangle: vertices at (movX, 0), (movX + size, 0), (movX, size)
+      // Sample-based overlap estimation (fine for visualization)
+      const step = 0.2;
+      let count = 0, total = 0;
+      for (let sx = movX; sx <= movX + p.moving.size; sx += step) {
+        for (let sy = 0; sy <= p.moving.size; sy += step) {
+          // Check if inside triangle: x >= movX, y >= 0, x + y <= movX + size (for right isosceles)
+          // More precisely: y <= size - (x - movX) = movX + size - x
+          if (sx >= movX && sy >= 0 && sy <= movX + p.moving.size - sx) {
+            total++;
+            if (sx >= 0 && sx <= fw && sy >= 0 && sy <= fh) count++;
+          }
+        }
+      }
+      overlapArea = total > 0 ? (count / total) * (0.5 * p.moving.size * p.moving.size) : 0;
+    }
+
+    // Overlap area - time data
+    const oaPoints = [];
+    const nPts = 100;
+    for (let i = 0; i <= nPts; i++) {
+      const ti = (i / nPts) * p.totalTime;
+      const mxi = p.moving.startX + p.moving.speed * ti;
+      let oa;
+      if (p.moving.type === 'rect') {
+        const ox = Math.max(0, mxi), ow = Math.max(0, Math.min(mxi + p.moving.size, fw) - ox);
+        const oh = Math.max(0, Math.min(p.moving.size, fh));
+        oa = ow * oh;
+      } else {
+        const step = 0.3;
+        let c = 0, tot = 0;
+        for (let sx = mxi; sx <= mxi + p.moving.size; sx += step) {
+          for (let sy = 0; sy <= p.moving.size; sy += step) {
+            if (sx >= mxi && sy >= 0 && sy <= mxi + p.moving.size - sx) {
+              tot++;
+              if (sx >= 0 && sx <= fw && sy >= 0 && sy <= fh) c++;
+            }
+          }
+        }
+        oa = tot > 0 ? (c / tot) * (0.5 * p.moving.size * p.moving.size) : 0;
+      }
+      oaPoints.push({ t: ti, a: oa });
+    }
+
+    const maxArea = Math.max(...oaPoints.map(d => d.a), 1);
+
+    return {
+      t, movX,
+      overlapArea,
+      overlapData: oaPoints,
+      maxArea,
+      fixedW: fw, fixedH: fh,
+      movSize: p.moving.size, movType: p.moving.type,
+      totalTime: p.totalTime
+    };
+  }
+
+  // --- Type 7: 自定义通用 ---
+  _snap7() {
+    const p = this.problem;
+    const t = clamp(this.t, 0, p.tMax || 10);
+    const pts = p.fixPoints || [];
+    const segs = p.pathSegs || [{ tEnd: 5 }, { tEnd: 8 }];
+    const rect = (p.shapes || []).find(s => s.type === 'rect') || { w: 4, h: 3 };
+    const b = rect.w, a = rect.h;
+
+    // Find moving point's path vertices from fixPoints
+    // Path order is determined by segs indices matching fixPoints
+    let pathVerts = [];
+    if (segs.length >= 2) {
+      // Try to infer path from vertex labels in the moving point description
+      // Default: D(0,0)→B(w,h)→C(w,0) for rectangle ABCD
+      const D = pts.find(q => q.label === 'D') || { x: 0, y: 0 };
+      const B = pts.find(q => q.label === 'B') || { x: (p.shapes[0]||{w:4}).w || 4, y: (p.shapes[0]||{h:3}).h || 3 };
+      const C = pts.find(q => q.label === 'C') || { x: (p.shapes[0]||{w:4}).w || 4, y: 0 };
+      pathVerts = [D, B, C];
+    }
+
+    // Compute moving point position along segments
+    let px = 0, py = 0, curSeg = 0;
+    let tAcc = 0;
+    for (let i = 0; i < segs.length && i + 1 < pathVerts.length; i++) {
+      const seg = segs[i];
+      const segStart = tAcc;
+      tAcc = seg.tEnd;
+      if (t <= tAcc || i === segs.length - 1) {
+        const localT = clamp(t - segStart, 0, seg.tEnd - segStart);
+        const dur = seg.tEnd - segStart || 1;
+        const frac = localT / dur;
+        curSeg = i;
+        const from = pathVerts[i], to = pathVerts[i + 1];
+        px = from.x + frac * (to.x - from.x);
+        py = from.y + frac * (to.y - from.y);
+        break;
+      }
+    }
+
+    // Evaluate tracked expression
+    const trackedExpr = p.trackedExpr || 'py-px';
+    let trackedVal;
+    try {
+      trackedVal = evalExpr(trackedExpr.replace(/px/g, String(px)).replace(/py/g, String(py)), { x: px, y: py });
+    } catch { trackedVal = py - px; }
+    if (!isFinite(trackedVal)) trackedVal = 0;
+
+    // Tracked data over time for mini graph
+    const trackData = [];
+    const nPts = 100;
+    for (let i = 0; i <= nPts; i++) {
+      const ti = (i / nPts) * (p.tMax || 10);
+      let pxi = 0, pyi = 0;
+      let tA = 0;
+      for (let j = 0; j < segs.length && j + 1 < pathVerts.length; j++) {
+        const sj = segs[j], ss = tA; tA = sj.tEnd;
+        if (ti <= tA || j === segs.length-1) {
+          const lt = clamp(ti - ss, 0, sj.tEnd - ss);
+          const dur = sj.tEnd - ss || 1;
+          const fr = lt / dur;
+          const from = pathVerts[j], to = pathVerts[j + 1];
+          pxi = from.x + fr * (to.x - from.x);
+          pyi = from.y + fr * (to.y - from.y);
+          break;
+        }
+      }
+      let tv;
+      try { tv = evalExpr(trackedExpr.replace(/px/g, String(pxi)).replace(/py/g, String(pyi)), { x: pxi, y: pyi }); }
+      catch { tv = pyi - pxi; }
+      if (isFinite(tv)) trackData.push({ t: ti, a: tv });
+    }
+    const maxTrack = Math.max(...trackData.map(d => Math.abs(d.a)), 0.1) * 1.3;
+
+    return { t, px, py, trackedVal, trackData, maxTrack, curSeg,
+      shapes, fixPoints: p.fixPoints || [], a, b, tMax: p.tMax || 10,
+      trackedName: p.trackedName || 'y', trackedExpr };
+  }
+}
+
+// ============ RENDERER ============
+class Renderer {
+  constructor() { this.ctx = ctx; this.W = CW; this.H = CH; }
+
+  /** Polyfill for CanvasRenderingContext2D.roundRect */
+  _roundRect(x, y, w, h, r) {
+    const c = this.ctx;
+    if (c.roundRect) { c.beginPath(); c.roundRect(x, y, w, h, r); return; }
+    c.beginPath();
+    r = Math.min(r, w/2, h/2);
+    c.moveTo(x + r, y);
+    c.lineTo(x + w - r, y);
+    c.arcTo(x + w, y, x + w, y + r, r);
+    c.lineTo(x + w, y + h - r);
+    c.arcTo(x + w, y + h, x + w - r, y + h, r);
+    c.lineTo(x + r, y + h);
+    c.arcTo(x, y + h, x, y + h - r, r);
+    c.lineTo(x, y + r);
+    c.arcTo(x, y, x + r, y, r);
+    c.closePath();
+  }
+
+  clear() {
+    const isDark = document.body.classList.contains('dark');
+    this.ctx.fillStyle = isDark ? '#1f2126' : '#f9f8f4';
+    this.ctx.fillRect(0, 0, this.W, this.H);
+    // Subtle border
+    this.ctx.strokeStyle = isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)';
+    this.ctx.lineWidth = 1;
+    this.ctx.strokeRect(0.5, 0.5, this.W - 1, this.H - 1);
+  }
+
+  /** Transform world coords to canvas coords */
+  w2c(wx, wy, wb, cb) {
+    const cx = cb.x + (wx - wb.xMin) / (wb.xMax - wb.xMin) * cb.w;
+    const cy = cb.y + cb.h - (wy - wb.yMin) / (wb.yMax - wb.yMin) * cb.h;
+    return { x: cx, y: cy };
+  }
+
+  draw(p, snap) {
+    this.clear();
+    if (!p || !snap) {
+      this.ctx.fillStyle = '#888';
+      this.ctx.font = '18px "Microsoft YaHei"';
+      this.ctx.textAlign = 'center';
+      this.ctx.fillText('请粘贴题目并点击"解析并生成动画"', this.W/2, this.H/2);
+      return;
+    }
+
+    switch (p.type) {
+      case 1: this._drawType1(p, snap); break;
+      case 2: this._drawType2(p, snap); break;
+      case 3: this._drawType3(p, snap); break;
+      case 4: this._drawType4(p, snap); break;
+      case 5: this._drawType5(p, snap); break;
+      case 6: this._drawType6(p, snap); break;
+      case 7: this._drawType7(p, snap); break;
+    }
+  }
+
+  // ===== TYPE 1: 追及相遇 =====
+  _drawType1(p, snap) {
+    const ctx = this.ctx;
+    const roadY = 280, roadL = 70, roadR = 730;
+    const dist = snap.totalDist;
+    const isDark = document.body.classList.contains('dark');
+
+    // Road — thicker, with subtle shadow
+    ctx.strokeStyle = isDark ? '#5a6675' : '#7a8895'; ctx.lineWidth = 4; ctx.lineCap = 'round';
+    ctx.beginPath(); ctx.moveTo(roadL, roadY); ctx.lineTo(roadR, roadY); ctx.stroke();
+
+    // Tick marks — major and minor
+    const nTicks = 10;
+    for (let i = 0; i <= nTicks; i++) {
+      const x = roadL + (i / nTicks) * (roadR - roadL);
+      const isMajor = i % 5 === 0;
+      ctx.strokeStyle = isDark ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.25)';
+      ctx.lineWidth = isMajor ? 1.5 : 0.8;
+      const h = isMajor ? 14 : 8;
+      ctx.beginPath(); ctx.moveTo(x, roadY - h); ctx.lineTo(x, roadY + h); ctx.stroke();
+    }
+
+    // Labels
+    ctx.fillStyle = isDark ? '#bbb' : '#333'; ctx.font = 'bold 18px "Microsoft YaHei"'; ctx.textAlign = 'center';
+    ctx.fillText('A', roadL - 24, roadY + 8);
+    ctx.fillText('B', roadR + 24, roadY + 8);
+    ctx.font = 'bold 14px "Microsoft YaHei"';
+    ctx.fillText(p.unitDist ? `${dist}${p.unitDist}` : `${dist}`, (roadL + roadR)/2, roadY - 30);
+
+    // Draw objects
+    snap.objects.forEach(obj => {
+      const px = roadL + (obj.pos / dist) * (roadR - roadL);
+      const clampedPx = clamp(px, roadL - 10, roadR + 10);
+      const py = roadY;
+      const r = 10;
+
+      // Shadow
+      ctx.fillStyle = 'rgba(0,0,0,0.12)'; ctx.beginPath();
+      ctx.ellipse(clampedPx, py + r * 0.5, r * 0.7, r * 0.2, 0, 0, Math.PI * 2); ctx.fill();
+
+      // Dot with gradient
+      const grad = ctx.createRadialGradient(clampedPx - r * 0.2, py - r * 0.2, r * 0.1, clampedPx, py, r);
+      grad.addColorStop(0, '#fff'); grad.addColorStop(0.45, obj.color); grad.addColorStop(1, 'rgba(0,0,0,0.35)');
+      ctx.fillStyle = grad; ctx.beginPath();
+      ctx.arc(clampedPx, py, r, 0, Math.PI * 2); ctx.fill();
+      ctx.strokeStyle = 'rgba(0,0,0,0.18)'; ctx.lineWidth = 2;
+      ctx.stroke();
+
+      // Label
+      ctx.fillStyle = isDark ? '#ddd' : '#222'; ctx.font = 'bold 14px "Microsoft YaHei"'; ctx.textAlign = 'center';
+      const labelY = snap.objects[0].name === obj.name ? roadY - 28 : roadY + 34;
+      ctx.fillText(`${obj.name}`, clampedPx, labelY);
+      ctx.font = 'bold 11px "Microsoft YaHei"';
+      ctx.fillText(`${obj.pos.toFixed(1)}${p.unitDist}`, clampedPx, labelY + 15);
+    });
+
+    // Meeting point marker
+    const meetPos = snap.objects[0].pos;
+    if (snap.isMeeting && snap.meetingTime > 0 && snap.meetingTime < 100) {
+      const mx = roadL + (meetPos / dist) * (roadR - roadL);
+      ctx.strokeStyle = '#c4893a'; ctx.lineWidth = 2; ctx.setLineDash([5, 3]);
+      ctx.beginPath(); ctx.moveTo(mx, roadY - 45); ctx.lineTo(mx, roadY + 45); ctx.stroke();
+      ctx.setLineDash([]);
+      // Marker circle
+      ctx.fillStyle = '#c4893a'; ctx.beginPath(); ctx.arc(mx, roadY, 6, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#c4893a'; ctx.font = 'bold 14px "Microsoft YaHei"'; ctx.textAlign = 'center';
+      ctx.fillText(`相遇 t≈${snap.meetingTime.toFixed(1)}h`, mx, roadY - 52);
+    }
+
+    // Title
+    ctx.fillStyle = isDark ? '#cdcfd3' : '#1e1e1e'; ctx.font = 'bold 17px "Microsoft YaHei"'; ctx.textAlign = 'left';
+    ctx.fillText(p.title, 20, 28);
+
+    // Mini s-t graph
+    this._drawMiniSTGraph1(p, snap);
+  }
+
+  _drawMiniSTGraph1(p, snap) {
+    const ctx = this.ctx;
+    const isDark = document.body.classList.contains('dark');
+    const mx = 555, my = 18, mw = 228, mh = 155;
+    ctx.fillStyle = isDark ? 'rgba(30,32,38,0.92)' : 'rgba(255,255,252,0.92)';
+    ctx.strokeStyle = isDark ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.12)';
+    ctx.lineWidth = 1;
+    this._roundRect(mx, my, mw, mh, 6); ctx.fill(); ctx.stroke();
+
+    ctx.fillStyle = isDark ? '#bbb' : '#333'; ctx.font = 'bold 12px "Microsoft YaHei"'; ctx.textAlign = 'center';
+    ctx.fillText('s-t 图 (位置-时间)', mx + mw/2, my + 16);
+
+    const meetingT = snap.meetingTime;
+    const totalT = Math.max(meetingT * 1.6, 5);
+    const maxS = snap.totalDist;
+    const gx = mx + 30, gy = my + 28, gw = mw - 42, gh = mh - 42;
+
+    ctx.strokeStyle = isDark ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.2)'; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(gx, gy); ctx.lineTo(gx, gy + gh); ctx.lineTo(gx + gw, gy + gh); ctx.stroke();
+
+    ctx.fillStyle = isDark ? '#999' : '#666'; ctx.font = '10px "Microsoft YaHei"'; ctx.textAlign = 'center';
+    ctx.fillText('t', gx + gw/2, gy + gh + 14);
+    ctx.fillText('s', gx - 14, gy + gh/2);
+
+    [p.objects[0], p.objects[1]].forEach((obj, idx) => {
+      const col = idx === 0 ? p.objects[0].color : p.objects[1].color;
+      ctx.strokeStyle = col; ctx.lineWidth = 2.5;
+      ctx.beginPath();
+      for (let i = 0; i <= 50; i++) {
+        const ti = (i / 50) * totalT;
+        const s = obj.startPos + obj.direction * obj.speed * Math.max(0, ti - obj.delay);
+        const sx = gx + (ti / totalT) * gw;
+        const sy = gy + gh - clamp(s / maxS, 0, 1) * gh;
+        if (i === 0) ctx.moveTo(sx, sy); else ctx.lineTo(sx, sy);
+      }
+      ctx.stroke();
+      const lx = gx + gw - 35, ly = gy + 4 + idx * 14;
+      ctx.fillStyle = col; ctx.beginPath(); ctx.arc(lx, ly, 4, 0, Math.PI*2); ctx.fill();
+      ctx.fillStyle = isDark ? '#bbb' : '#333'; ctx.font = '10px "Microsoft YaHei"'; ctx.textAlign = 'left';
+      ctx.fillText(obj.name, lx + 8, ly + 3);
+    });
+
+    // Meeting point marker
+    if (meetingT > 0 && meetingT < totalT) {
+      const meetS = p.objects[0].startPos + p.objects[0].direction * p.objects[0].speed * Math.max(0, meetingT - p.objects[0].delay);
+      const cmx = gx + (meetingT / totalT) * gw;
+      const cmy = gy + gh - clamp(meetS / maxS, 0, 1) * gh;
+      ctx.fillStyle = '#c4893a'; ctx.beginPath(); ctx.arc(cmx, cmy, 5, 0, Math.PI*2); ctx.fill();
+      ctx.fillStyle = '#c4893a'; ctx.font = 'bold 10px "Microsoft YaHei"';
+      ctx.fillText('相遇', cmx + 7, cmy - 4);
+    }
+  }
+
+  // ===== TYPE 2: 函数动态问题（通用版） =====
+  _drawType2(p, snap) {
+    const ctx = this.ctx;
+    const isDark = document.body.classList.contains('dark');
+    const curves = p.curves || [];
+    const dynExpr = p.dynExpr || (p.paramName + '*x');
+    const paramName = p.paramName || 'm';
+    const paramVal = snap.paramVal;
+
+    // --- Compute isometric viewport ---
+    let gx = 60, gy = 30, gw = this.W - 130, gh = this.H - 100;
+    const xr = [...p.xRange];
+    const ppu = gw / (xr[1] - xr[0]);
+    let yMinV = Infinity, yMaxV = -Infinity;
+    for (let i = 0; i <= 40; i++) {
+      const sx = xr[0] + (i/40)*(xr[1]-xr[0]);
+      curves.forEach(c => { const y = evalExpr(c.expr, {x:sx}); if (isFinite(y)) { yMinV=Math.min(yMinV,y); yMaxV=Math.max(yMaxV,y); } });
+      const dy = evalExpr(dynExpr, {x:sx, [paramName]:paramVal}); if (isFinite(dy)) { yMinV=Math.min(yMinV,dy); yMaxV=Math.max(yMaxV,dy); }
+    }
+    const yMid = (yMinV+yMaxV)/2, wYSpan = gh/ppu;
+    const yr = [yMid - wYSpan/2, yMid + wYSpan/2];
+
+    // Grid & axes
+    this._drawCoordGrid(gx, gy, gw, gh, xr, yr);
+
+    // Highlight condition region
+    if (p.condition.op === '>' || p.condition.op === '>=') {
+      const condX = gx + (p.condition.value - xr[0])/(xr[1]-xr[0])*gw;
+      ctx.fillStyle = isDark ? 'rgba(91,158,207,0.1)' : 'rgba(30,74,107,0.06)';
+      ctx.fillRect(condX, gy, gx+gw-condX, gh);
+    }
+
+    // Draw all fixed curves
+    curves.forEach(c => {
+      this._drawCurve(gx, gy, gw, gh, xr, yr, c.expr, c.color, c.label, false);
+    });
+
+    // Draw dynamic curve
+    const dynColor = snap.inRange ? '#5bb98c' : '#e8836d';
+    const dynLabel = `y=${dynExpr.replace(/\*/g,'')}`.replace(paramName, `${paramName}=${paramVal.toFixed(2)}`);
+    this._drawCurve(gx, gy, gw, gh, xr, yr, dynExpr.replace(new RegExp(paramName,'g'), paramVal), dynColor, dynLabel, true);
+
+    // --- Bottom info bar ---
+    const lY = this.H - 14;
+    ctx.font = 'bold 13px "Microsoft YaHei"'; ctx.textAlign = 'left';
+    let lX = 20;
+    curves.forEach(c => {
+      ctx.fillStyle = c.color;
+      ctx.fillText(`● ${c.label}`, lX, lY);
+      lX += ctx.measureText(`● ${c.label}`).width + 14;
+    });
+    ctx.fillStyle = dynColor;
+    ctx.fillText(`● 动态`, lX, lY);
+    lX += ctx.measureText(`● 动态`).width + 14;
+
+    // Range text
+    let rangeText = '';
+    if (p.relType === 'above') rangeText = `${paramName} > ${snap.pMin.toFixed(2)}`;
+    else if (p.relType === 'below') rangeText = `${paramName} < ${snap.pMax.toFixed(2)}`;
+    else rangeText = `${snap.pMin.toFixed(2)} < ${paramName} < ${snap.pMax.toFixed(2)}`;
+    ctx.fillStyle = isDark ? '#aaa' : '#555';
+    ctx.fillText(`| ${p.condition.var}${p.condition.op}${p.condition.value} | ${rangeText}`, lX, lY);
+    lX += ctx.measureText(`| ${p.condition.var}${p.condition.op}${p.condition.value} | ${rangeText}`).width + 10;
+
+    ctx.fillStyle = snap.inRange ? '#5bb98c' : '#e8836d';
+    ctx.fillText(snap.inRange ? '✅' : '❌', lX, lY);
+
+    // Title
+    ctx.fillStyle = isDark ? '#cdcfd3' : '#1e1e1e'; ctx.font = 'bold 16px "Microsoft YaHei"'; ctx.textAlign = 'left';
+    ctx.fillText(p.title, 20, 22);
+  }
+
+  /** Draw a single curve for arbitrary expression */
+  _drawCurve(gx, gy, gw, gh, xr, yr, expr, color, label, dashed) {
+    const ctx = this.ctx;
+    ctx.save();
+    ctx.beginPath(); ctx.rect(gx, gy, gw, gh); ctx.clip();
+
+    ctx.strokeStyle = color; ctx.lineWidth = 3;
+    if (dashed) ctx.setLineDash([8, 5]); else ctx.setLineDash([]);
+
+    ctx.beginPath();
+    let first = true;
+    for (let i = 0; i <= 100; i++) {
+      const wx = xr[0] + (i/100)*(xr[1] - xr[0]);
+      const wy = evalExpr(expr, {x: wx});
+      if (!isFinite(wy)) { first = true; continue; }
+      const cx = gx + (wx - xr[0])/(xr[1]-xr[0])*gw;
+      const cy = gy + gh - (wy - yr[0])/(yr[1]-yr[0])*gh;
+      const ccy = clamp(cy, gy - 3, gy + gh + 3);
+      if (first) { ctx.moveTo(cx, ccy); first = false; }
+      else ctx.lineTo(cx, ccy);
+    }
+    ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.restore();
+
+    // Label at grid boundary intersection
+    const isDark = document.body.classList.contains('dark');
+    let lx = -999, ly = -999;
+    // Try right edge
+    const wyR = evalExpr(expr, {x: xr[1]});
+    if (isFinite(wyR)) {
+      const cyR = gy + gh - (wyR - yr[0])/(yr[1]-yr[0])*gh;
+      if (cyR >= gy && cyR <= gy+gh) { lx = gx+gw; ly = cyR; }
+    }
+    // Try left edge
+    if (lx === -999) {
+      const wyL = evalExpr(expr, {x: xr[0]});
+      if (isFinite(wyL)) {
+        const cyL = gy + gh - (wyL - yr[0])/(yr[1]-yr[0])*gh;
+        if (cyL >= gy && cyL <= gy+gh) { lx = gx; ly = cyL; }
+      }
+    }
+    // Fallback: mid-point
+    if (lx === -999) {
+      const midY = evalExpr(expr, {x: (xr[0]+xr[1])/2});
+      ly = isFinite(midY) ? gy + gh - (midY - yr[0])/(yr[1]-yr[0])*gh : gy+gh/2;
+      lx = gx + gw * 0.5; ly = clamp(ly, gy+5, gy+gh-5);
+    }
+
+    const isRight = lx >= gx + gw - 5;
+    const labelX = isRight ? lx - 6 : lx + 6;
+    const labelY = clamp(ly - 8, gy + 3, gy + gh - 3);
+    ctx.textAlign = isRight ? 'right' : 'left';
+    ctx.font = 'bold 13px "Microsoft YaHei"'; ctx.fillStyle = color;
+    const lw = ctx.measureText(label).width + 6;
+    ctx.fillStyle = isDark ? 'rgba(30,32,38,0.88)' : 'rgba(255,255,252,0.88)';
+    ctx.fillRect(labelX - (isRight ? lw : 0), labelY - 12, lw, 17);
+    ctx.fillStyle = color;
+    ctx.fillText(label, labelX, labelY);
+  }
+
+  _drawCoordGrid(gx, gy, gw, gh, xr, yr) {
+    const ctx = this.ctx;
+    const isDark = document.body.classList.contains('dark');
+
+    // Clip to grid area so lines don't overflow
+    ctx.save();
+    ctx.beginPath(); ctx.rect(gx, gy, gw, gh); ctx.clip();
+
+    // Grid lines — clean
+    ctx.strokeStyle = isDark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.07)';
+    ctx.lineWidth = 1;
+    const nx = 10, ny = 10;
+    for (let i = 0; i <= nx; i++) {
+      const x = gx + (i/nx)*gw;
+      ctx.beginPath(); ctx.moveTo(x, gy); ctx.lineTo(x, gy+gh); ctx.stroke();
+    }
+    for (let i = 0; i <= ny; i++) {
+      const y = gy + (i/ny)*gh;
+      ctx.beginPath(); ctx.moveTo(gx, y); ctx.lineTo(gx+gw, y); ctx.stroke();
+    }
+
+    // Major grid lines (every 5)
+    ctx.strokeStyle = isDark ? 'rgba(255,255,255,0.14)' : 'rgba(0,0,0,0.14)';
+    ctx.lineWidth = 1;
+    for (let i = 0; i <= nx; i+=5) {
+      const x = gx + (i/nx)*gw;
+      ctx.beginPath(); ctx.moveTo(x, gy); ctx.lineTo(x, gy+gh); ctx.stroke();
+    }
+    for (let i = 0; i <= ny; i+=5) {
+      const y = gy + (i/ny)*gh;
+      ctx.beginPath(); ctx.moveTo(gx, y); ctx.lineTo(gx+gw, y); ctx.stroke();
+    }
+
+    ctx.restore(); // remove clip
+
+    // Axes (drawn outside clip so they can extend slightly for labels)
+    const xAxisY = gy + gh - (-yr[0])/(yr[1]-yr[0])*gh;
+    const yAxisX = gx + (-xr[0])/(xr[1]-xr[0])*gw;
+    const axCx = clamp(xAxisY, gy, gy+gh);
+    const ayCx = clamp(yAxisX, gx, gx+gw);
+
+    ctx.strokeStyle = isDark ? 'rgba(255,255,255,0.4)' : 'rgba(0,0,0,0.35)';
+    ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(gx, axCx); ctx.lineTo(gx+gw, axCx); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(ayCx, gy); ctx.lineTo(ayCx, gy+gh); ctx.stroke();
+
+    // Arrow tips on axes
+    const arr = 5;
+    ctx.fillStyle = isDark ? 'rgba(255,255,255,0.35)' : 'rgba(0,0,0,0.35)';
+    ctx.beginPath(); ctx.moveTo(gx+gw, axCx); ctx.lineTo(gx+gw-arr, axCx-arr/2); ctx.lineTo(gx+gw-arr, axCx+arr/2); ctx.fill();
+    ctx.beginPath(); ctx.moveTo(ayCx, gy); ctx.lineTo(ayCx-arr/2, gy+arr); ctx.lineTo(ayCx+arr/2, gy+arr); ctx.fill();
+
+    // Tick labels
+    ctx.fillStyle = isDark ? '#999' : '#555'; ctx.font = 'bold 11px "Microsoft YaHei"'; ctx.textAlign = 'center';
+    for (let i = 0; i <= nx; i+=2) {
+      const v = xr[0] + (i/nx)*(xr[1]-xr[0]);
+      const x = gx + (i/nx)*gw;
+      ctx.fillText(v.toFixed(0), x, axCx + 16);
+    }
+    ctx.textAlign = 'right';
+    for (let i = 0; i <= ny; i+=2) {
+      const v = yr[0] + (i/ny)*(yr[1]-yr[0]);
+      const y = gy + gh - (i/ny)*gh;
+      ctx.fillText(v.toFixed(0), ayCx - 8, y + 4);
+    }
+  }
+
+  _drawLine(gx, gy, gw, gh, xr, yr, line, color, label, dashed) {
+    const ctx = this.ctx;
+
+    // Clip drawing to grid area
+    ctx.save();
+    ctx.beginPath(); ctx.rect(gx, gy, gw, gh); ctx.clip();
+
+    ctx.strokeStyle = color; ctx.lineWidth = 3;
+    if (dashed) ctx.setLineDash([8, 5]); else ctx.setLineDash([]);
+
+    ctx.beginPath();
+    let first = true;
+    for (let i = 0; i <= 100; i++) {
+      const wx = xr[0] + (i/100)*(xr[1]-xr[0]);
+      const wy = line.k * wx + line.b;
+      const cx = gx + (wx - xr[0])/(xr[1]-xr[0])*gw;
+      const cy = gy + gh - (wy - yr[0])/(yr[1]-yr[0])*gh;
+      const ccy = clamp(cy, gy - 5, gy + gh + 5);
+      if (first) { ctx.moveTo(cx, ccy); first = false; }
+      else ctx.lineTo(cx, ccy);
+    }
+    ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.restore();
+
+    // --- Place label at grid boundary intersection (always visible) ---
+    const isDark = document.body.classList.contains('dark');
+    // Find where the line exits the grid box
+    // Try right edge, left edge, top edge, bottom edge
+    const tryEdges = [
+      { wx: xr[1], getCx: () => gx+gw, getCy: (wy) => gy+gh-(wy-yr[0])/(yr[1]-yr[0])*gh },
+      { wx: xr[0], getCx: () => gx, getCy: (wy) => gy+gh-(wy-yr[0])/(yr[1]-yr[0])*gh },
+    ];
+    let lx = -999, ly = -999;
+    for (const edge of tryEdges) {
+      const wy = line.k * edge.wx + line.b;
+      const cy = edge.getCy(wy);
+      if (cy >= gy && cy <= gy+gh) {
+        lx = edge.getCx(); ly = cy;
+        break;
+      }
+    }
+    // If not on left/right edges, try top/bottom
+    if (lx === -999) {
+      // Bottom edge: solve for x where y = yr[0]
+      let wxBottom = line.k !== 0 ? (yr[0] - line.b) / line.k : xr[0];
+      let cxBottom = gx + (wxBottom - xr[0])/(xr[1]-xr[0])*gw;
+      if (cxBottom >= gx && cxBottom <= gx+gw) { lx = cxBottom; ly = gy+gh; }
+      // Top edge: solve for x where y = yr[1]
+      if (lx === -999) {
+        let wxTop = line.k !== 0 ? (yr[1] - line.b) / line.k : xr[1];
+        let cxTop = gx + (wxTop - xr[0])/(xr[1]-xr[0])*gw;
+        if (cxTop >= gx && cxTop <= gx+gw) { lx = cxTop; ly = gy; }
+      }
+    }
+    // Fallback: use visible mid-point
+    if (lx === -999 || ly === -999) {
+      const midWY = line.k * (xr[0] + 0.5*(xr[1]-xr[0])) + line.b;
+      const midCY = gy + gh - (midWY - yr[0])/(yr[1]-yr[0])*gh;
+      lx = gx + gw * 0.5; ly = clamp(midCY, gy+5, gy+gh-5);
+    }
+
+    // Offset label slightly from edge
+    const isRightEdge = lx >= gx + gw - 5;
+    const isLeftEdge = lx <= gx + 5;
+    const labelX = isRightEdge ? lx - 8 : lx + 8;
+    const labelY = clamp(ly - 8, gy + 3, gy + gh - 3);
+    ctx.textAlign = isRightEdge ? 'right' : 'left';
+
+    ctx.font = 'bold 13px "Microsoft YaHei"'; ctx.fillStyle = color;
+    const lblW = ctx.measureText(label).width + 6;
+    ctx.fillStyle = isDark ? 'rgba(30,32,38,0.88)' : 'rgba(255,255,252,0.88)';
+    ctx.fillRect(labelX - (isRightEdge ? lblW : 0), labelY - 12, lblW, 17);
+    ctx.fillStyle = color;
+    ctx.fillText(label, labelX, labelY);
+  }
+
+  // ===== TYPE 3: 分段运动 =====
+  _drawType3(p, snap) {
+    const ctx = this.ctx;
+    const isDark = document.body.classList.contains('dark');
+    const roadY = 280, roadL = 70, roadR = 730;
+
+    // Road
+    ctx.strokeStyle = isDark ? '#5a6675' : '#7a8895'; ctx.lineWidth = 4; ctx.lineCap = 'round';
+    ctx.beginPath(); ctx.moveTo(roadL, roadY); ctx.lineTo(roadR, roadY); ctx.stroke();
+
+    // Position on road
+    const objX = roadL + (snap.segInfo.s / snap.totalDist) * (roadR - roadL);
+    const clampedX = clamp(objX, roadL, roadR);
+    const r = 10;
+
+    // Motion trail (already traveled)
+    ctx.strokeStyle = isDark ? 'rgba(91,158,207,0.25)' : 'rgba(30,74,107,0.2)';
+    ctx.lineWidth = r * 0.8; ctx.lineCap = 'round';
+    ctx.beginPath(); ctx.moveTo(roadL, roadY); ctx.lineTo(clampedX, roadY); ctx.stroke();
+    // Future path
+    ctx.strokeStyle = isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.04)';
+    ctx.beginPath(); ctx.moveTo(clampedX, roadY); ctx.lineTo(roadR, roadY); ctx.stroke();
+
+    // Shadow
+    ctx.fillStyle = 'rgba(0,0,0,0.12)'; ctx.beginPath();
+    ctx.ellipse(clampedX, roadY + r * 0.5, r * 0.7, r * 0.2, 0, 0, Math.PI * 2); ctx.fill();
+
+    // Dot
+    const grad = ctx.createRadialGradient(clampedX - r * 0.2, roadY - r * 0.2, r * 0.1, clampedX, roadY, r);
+    grad.addColorStop(0, '#fff'); grad.addColorStop(0.5, '#4a6fa5'); grad.addColorStop(1, 'rgba(0,0,0,0.4)');
+    ctx.fillStyle = grad; ctx.beginPath();
+    ctx.arc(clampedX, roadY, r, 0, Math.PI * 2); ctx.fill();
+    ctx.strokeStyle = 'rgba(0,0,0,0.18)'; ctx.lineWidth = 2;
+    ctx.stroke();
+
+    // Phase label
+    ctx.fillStyle = isDark ? '#cdcfd3' : '#1e1e1e'; ctx.font = 'bold 13px "Microsoft YaHei"'; ctx.textAlign = 'center';
+    ctx.fillText(`阶段: ${snap.segInfo.seg.label}`, clampedX, roadY - 34);
+    ctx.fillText(`v=${snap.segInfo.v.toFixed(1)} m/s`, clampedX, roadY + 42);
+
+    // Distance markers
+    ctx.fillText(`0`, roadL - 10, roadY + 25);
+    ctx.fillText(`${snap.totalDist.toFixed(0)}m`, roadR + 10, roadY + 25);
+    ctx.fillText(`${snap.segInfo.s.toFixed(1)}m`, clampedX, roadY - 50);
+
+    // Title
+    ctx.fillStyle = isDark ? '#cdcfd3' : '#1e1e1e'; ctx.font = 'bold 17px "Microsoft YaHei"'; ctx.textAlign = 'left';
+    ctx.fillText(p.title, 20, 28);
+
+    // Mini graphs (s-t and v-t)
+    this._drawMiniVT(p, snap);
+    this._drawMiniST3(p, snap);
+  }
+
+  _drawMiniVT(p, snap) {
+    const ctx = this.ctx;
+    const isDark = document.body.classList.contains('dark');
+    const mx = 555, my = 18, mw = 228, mh = 135;
+    ctx.fillStyle = isDark ? 'rgba(30,32,38,0.92)' : 'rgba(255,255,252,0.92)';
+    ctx.strokeStyle = isDark ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.12)';
+    ctx.lineWidth = 1;
+    this._roundRect(mx, my, mw, mh, 6); ctx.fill(); ctx.stroke();
+    ctx.fillStyle = isDark ? '#bbb' : '#333'; ctx.font = 'bold 12px "Microsoft YaHei"'; ctx.textAlign = 'center';
+    ctx.fillText('v-t 图', mx + mw/2, my + 16);
+
+    const gx = mx + 30, gy = my + 28, gw = mw - 40, gh = mh - 42;
+    ctx.strokeStyle = isDark ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.2)'; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(gx, gy); ctx.lineTo(gx, gy+gh); ctx.lineTo(gx+gw, gy+gh); ctx.stroke();
+
+    const maxV = Math.max(...snap.vtPoints.map(p => p.v), 1) * 1.2;
+    ctx.strokeStyle = '#b5583d'; ctx.lineWidth = 2;
+    ctx.beginPath();
+    snap.vtPoints.forEach((pt, i) => {
+      const sx = gx + (pt.t / snap.totalTime) * gw;
+      const sy = gy + gh - (pt.v / maxV) * gh;
+      if (i === 0) ctx.moveTo(sx, sy); else ctx.lineTo(sx, sy);
+    });
+    ctx.stroke();
+
+    const curTX = gx + (Math.min(snap.segInfo.segStart + snap.segInfo.localT, snap.totalTime) / snap.totalTime) * gw;
+    ctx.strokeStyle = isDark ? '#5b9ecf' : '#1e4a6b'; ctx.lineWidth = 1; ctx.setLineDash([3, 3]);
+    ctx.beginPath(); ctx.moveTo(curTX, gy); ctx.lineTo(curTX, gy+gh); ctx.stroke();
+    ctx.setLineDash([]);
+  }
+
+  _drawMiniST3(p, snap) {
+    const ctx = this.ctx;
+    const isDark = document.body.classList.contains('dark');
+    const mx = 555, my = 163, mw = 228, mh = 135;
+    ctx.fillStyle = isDark ? 'rgba(30,32,38,0.92)' : 'rgba(255,255,252,0.92)';
+    ctx.strokeStyle = isDark ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.12)';
+    ctx.lineWidth = 1;
+    this._roundRect(mx, my, mw, mh, 6); ctx.fill(); ctx.stroke();
+    ctx.fillStyle = isDark ? '#bbb' : '#333'; ctx.font = 'bold 12px "Microsoft YaHei"'; ctx.textAlign = 'center';
+    ctx.fillText('s-t 图', mx + mw/2, my + 16);
+
+    const gx = mx + 30, gy = my + 28, gw = mw - 40, gh = mh - 42;
+    ctx.strokeStyle = isDark ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.2)'; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(gx, gy); ctx.lineTo(gx, gy+gh); ctx.lineTo(gx+gw, gy+gh); ctx.stroke();
+
+    ctx.strokeStyle = '#3a7d5e'; ctx.lineWidth = 2;
+    ctx.beginPath();
+    snap.stPoints.forEach((pt, i) => {
+      const sx = gx + (pt.t / snap.totalTime) * gw;
+      const sy = gy + gh - (pt.s / snap.totalDist) * gh;
+      if (i === 0) ctx.moveTo(sx, sy); else ctx.lineTo(sx, sy);
+    });
+    ctx.stroke();
+
+    const curTX = gx + (Math.min(snap.segInfo.segStart + snap.segInfo.localT, snap.totalTime) / snap.totalTime) * gw;
+    ctx.strokeStyle = isDark ? '#5b9ecf' : '#1e4a6b'; ctx.lineWidth = 1; ctx.setLineDash([3, 3]);
+    ctx.beginPath(); ctx.moveTo(curTX, gy); ctx.lineTo(curTX, gy+gh); ctx.stroke();
+    ctx.setLineDash([]);
+  }
+
+  // ===== TYPE 4: 动点+面积 =====
+  _drawType4(p, snap) {
+    const ctx = this.ctx;
+    // Use user-set ranges if panned/zoomed, otherwise auto-compute
+    const xMin = p.xRange ? p.xRange[0] : -0.5;
+    const xMax = p.xRange ? p.xRange[1] : snap.tMax + 1;
+    const yMin = p.yRange ? p.yRange[0] : -0.5;
+    const yMax = p.yRange ? p.yRange[1] : Math.max(snap.maxArea * 1.5, snap.qy * 1.2, 5);
+    const gx = 60, gy = 30, gw = this.W - 200, gh = this.H - 80;
+    this._drawCoordGrid(gx, gy, gw, gh, [xMin, xMax], [yMin, yMax]);
+
+    // Draw curve
+    ctx.strokeStyle = '#888'; ctx.lineWidth = 2;
+    ctx.beginPath();
+    let first = true;
+    for (let i = 0; i <= 100; i++) {
+      const wx = xMin + (i/100)*(xMax - xMin);
+      let wy;
+      try { wy = Function('x', `return ${p.curveFunc};`)(wx); } catch { wy = wx * wx; }
+      const cx = gx + (wx - xMin)/(xMax - xMin)*gw;
+      const cy = gy + gh - (wy - yMin)/(yMax - yMin)*gh;
+      if (first) { ctx.moveTo(cx, clamp(cy, gy-50, gy+gh+50)); first = false; }
+      else ctx.lineTo(cx, clamp(cy, gy-50, gy+gh+50));
+    }
+    ctx.stroke();
+
+    // Curve label
+    ctx.fillStyle = '#888'; ctx.font = 'italic 14px "Microsoft YaHei"'; ctx.textAlign = 'left';
+    ctx.fillText(`y=${p.curveFunc.replace(/\*/g,'')}`, gx + gw - 60, gy + 20);
+
+    // Triangle OPQ fill
+    const pCx = gx + (snap.px - xMin)/(xMax - xMin)*gw;
+    const pCy = gy + gh; // y=0
+    const oCx = gx + (0 - xMin)/(xMax - xMin)*gw;
+    const oCy = gy + gh; // y=0
+    const qCy = gy + gh - (snap.qy - yMin)/(yMax - yMin)*gh;
+
+    ctx.fillStyle = 'rgba(255,107,107,0.25)'; ctx.strokeStyle = '#FF6B6B'; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(oCx, oCy); ctx.lineTo(pCx, pCy); ctx.lineTo(pCx, clamp(qCy, gy, gy+gh)); ctx.closePath();
+    ctx.fill(); ctx.stroke();
+
+    // Points
+    [{x:0,y:0,l:'O',c:'#666'},{x:snap.px,y:0,l:'P',c:'#FF6B6B'},{x:snap.px,y:snap.qy,l:'Q',c:'#4ECDC4'}].forEach(pt => {
+      const cx = gx + (pt.x - xMin)/(xMax - xMin)*gw;
+      const cy = gy + gh - (pt.y - yMin)/(yMax - yMin)*gh;
+      ctx.fillStyle = pt.c; ctx.beginPath(); ctx.arc(cx, clamp(cy, gy, gy+gh), 6, 0, Math.PI*2); ctx.fill();
+      ctx.fillText(pt.l, cx + 10, clamp(cy, gy, gy+gh) + 4);
+    });
+
+    // Dashed line P→Q
+    ctx.strokeStyle = '#FF6B6B'; ctx.lineWidth = 1; ctx.setLineDash([4, 3]);
+    ctx.beginPath(); ctx.moveTo(pCx, pCy); ctx.lineTo(pCx, clamp(qCy, gy, gy+gh)); ctx.stroke();
+    ctx.setLineDash([]);
+
+    // Title & data
+    ctx.fillStyle = '#2c3e50'; ctx.font = 'bold 16px "Microsoft YaHei"'; ctx.textAlign = 'left';
+    ctx.fillText(p.title, 20, 22);
+    ctx.font = '13px "Microsoft YaHei"';
+    ctx.fillText(`S(t) = ${snap.area.toFixed(3)}`, gx + gw + 10, gy + 40);
+
+    // Mini area-time graph
+    this._drawMiniAreaGraph(snap, snap.areaTimeData, '面积 S(t)', snap.maxArea, snap.tMax, 570, 280, 210, 140);
+  }
+
+  _drawMiniAreaGraph(snap, data, title, maxY, maxX, mx, my, mw, mh) {
+    const ctx = this.ctx;
+    const isDark = document.body.classList.contains('dark');
+    ctx.fillStyle = isDark ? 'rgba(30,32,38,0.92)' : 'rgba(255,255,252,0.92)';
+    ctx.strokeStyle = isDark ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.12)';
+    ctx.lineWidth = 1;
+    this._roundRect(mx, my, mw, mh, 6); ctx.fill(); ctx.stroke();
+
+    ctx.fillStyle = isDark ? '#bbb' : '#333'; ctx.font = 'bold 12px "Microsoft YaHei"'; ctx.textAlign = 'center';
+    ctx.fillText(title, mx + mw/2, my + 16);
+
+    const gx = mx + 30, gy = my + 26, gw = mw - 38, gh = mh - 38;
+    ctx.strokeStyle = isDark ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.2)'; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(gx, gy); ctx.lineTo(gx, gy+gh); ctx.lineTo(gx+gw, gy+gh); ctx.stroke();
+
+    const maxA = maxY || 1;
+    ctx.strokeStyle = '#c4893a'; ctx.lineWidth = 2;
+    ctx.beginPath();
+    data.forEach((pt, i) => {
+      const sx = gx + (pt.t / maxX) * gw;
+      const sy = gy + gh - (pt.a / maxA) * gh;
+      if (i === 0) ctx.moveTo(sx, sy); else ctx.lineTo(sx, sy);
+    });
+    ctx.stroke();
+
+    // Current time line
+    if (snap.t !== undefined) {
+      const curTX = gx + (snap.t / maxX) * gw;
+      ctx.strokeStyle = isDark ? '#5b9ecf' : '#1e4a6b'; ctx.lineWidth = 1; ctx.setLineDash([3, 3]);
+      ctx.beginPath(); ctx.moveTo(curTX, gy); ctx.lineTo(curTX, gy+gh); ctx.stroke();
+      ctx.setLineDash([]);
+    }
+  }
+
+  // ===== TYPE 5: 双动点 =====
+  _drawType5(p, snap) {
+    const ctx = this.ctx;
+    const verts = snap.vertices;
+    // Use user-set ranges if panned/zoomed, otherwise auto-compute
+    let xMin, xMax, yMin, yMax;
+    if (p.xRange) { [xMin, xMax] = p.xRange; [yMin, yMax] = p.yRange; }
+    else {
+      const allX = [...verts.map(v=>v.x), snap.pPos.x, snap.qPos.x];
+      const allY = [...verts.map(v=>v.y), snap.pPos.y, snap.qPos.y];
+      const margin = 1.5;
+      xMin = Math.min(...allX) - margin; xMax = Math.max(...allX) + margin;
+      yMin = Math.min(...allY) - margin; yMax = Math.max(...allY) + margin;
+    }
+
+    const gx = 60, gy = 30, gw = this.W - 200, gh = this.H - 80;
+    // Grid
+    this._drawCoordGrid(gx, gy, gw, gh, [xMin, xMax], [yMin, yMax]);
+
+    // Draw triangle edges
+    ctx.strokeStyle = '#5a6c7d'; ctx.lineWidth = 3;
+    ctx.beginPath();
+    const v0c = this._w2cv(gx,gy,gw,gh,xMin,xMax,yMin,yMax,verts[0].x,verts[0].y);
+    ctx.moveTo(v0c.x, v0c.y);
+    for (let i = 1; i < verts.length; i++) {
+      const vc = this._w2cv(gx,gy,gw,gh,xMin,xMax,yMin,yMax,verts[i].x,verts[i].y);
+      ctx.lineTo(vc.x, vc.y);
+    }
+    ctx.closePath(); ctx.stroke();
+
+    // Label vertices
+    verts.forEach(v => {
+      const vc = this._w2cv(gx,gy,gw,gh,xMin,xMax,yMin,yMax,v.x,v.y);
+      ctx.fillStyle = '#333'; ctx.font = 'bold 16px "Microsoft YaHei"'; ctx.textAlign = 'center';
+      ctx.fillText(v.l, vc.x + 14, vc.y - 8);
+    });
+
+    // Draw P and Q
+    const pC = this._w2cv(gx,gy,gw,gh,xMin,xMax,yMin,yMax,snap.pPos.x,snap.pPos.y);
+    const qC = this._w2cv(gx,gy,gw,gh,xMin,xMax,yMin,yMax,snap.qPos.x,snap.qPos.y);
+
+    // P
+    ctx.fillStyle = '#FF6B6B'; ctx.beginPath(); ctx.arc(pC.x, pC.y, 10, 0, Math.PI*2); ctx.fill();
+    ctx.fillStyle = '#fff'; ctx.font = 'bold 11px "Microsoft YaHei"'; ctx.textAlign = 'center';
+    ctx.fillText('P', pC.x, pC.y + 4);
+
+    // Q
+    ctx.fillStyle = '#4ECDC4'; ctx.beginPath(); ctx.arc(qC.x, qC.y, 10, 0, Math.PI*2); ctx.fill();
+    ctx.fillStyle = '#fff'; ctx.font = 'bold 11px "Microsoft YaHei"'; ctx.textAlign = 'center';
+    ctx.fillText('Q', qC.x, qC.y + 4);
+
+    // PQ line
+    ctx.strokeStyle = '#c4893a'; ctx.lineWidth = 2; ctx.setLineDash([5, 3]);
+    ctx.beginPath(); ctx.moveTo(pC.x, pC.y); ctx.lineTo(qC.x, qC.y); ctx.stroke();
+    ctx.setLineDash([]);
+
+    // PQ label
+    const midX = (pC.x + qC.x)/2, midY = (pC.y + qC.y)/2;
+    ctx.fillStyle = '#c4893a'; ctx.font = 'bold 13px "Microsoft YaHei"'; ctx.textAlign = 'center';
+    ctx.fillText(`PQ=${snap.pqDist.toFixed(2)}`, midX, midY - 12);
+
+    // Title
+    ctx.fillStyle = '#2c3e50'; ctx.font = 'bold 16px "Microsoft YaHei"'; ctx.textAlign = 'left';
+    ctx.fillText(p.title, 20, 22);
+
+    // Mini PQ-time graph
+    const pqMax = Math.max(...snap.pqPoints.map(d=>d.d), 1) * 1.1;
+    const pqData = snap.pqPoints.map(d => ({t: d.t, a: d.d}));
+    this._drawMiniAreaGraph(snap, pqData, 'PQ长度', pqMax, snap.tMax, 570, 280, 210, 140);
+  }
+
+  _w2cv(gx,gy,gw,gh,xMin,xMax,yMin,yMax,wx,wy) {
+    const cx = gx + (wx - xMin) / (xMax - xMin) * gw;
+    const cy = gy + gh - (wy - yMin) / (yMax - yMin) * gh;
+    return { x: cx, y: cy };
+  }
+
+  // ===== TYPE 6: 平移重叠 =====
+  _drawType6(p, snap) {
+    const ctx = this.ctx;
+    // Scale: fixed rect [0, fw] x [0, fh] centered in canvas
+    const scale = Math.min((this.W - 120) / (p.fixed.w + p.moving.size + 4), (this.H - 120) / Math.max(p.fixed.h, p.moving.size));
+    const offX = 60, offY = (this.H - Math.max(p.fixed.h, p.moving.size) * scale) / 2 + 20;
+    const fwPx = p.fixed.w * scale, fhPx = p.fixed.h * scale;
+
+    // Fixed rectangle
+    ctx.fillStyle = 'rgba(102,119,136,0.2)'; ctx.strokeStyle = '#667788'; ctx.lineWidth = 3;
+    ctx.beginPath(); ctx.rect(offX, offY, fwPx, fhPx); ctx.fill(); ctx.stroke();
+    ctx.fillStyle = '#667788'; ctx.font = '14px "Microsoft YaHei"'; ctx.textAlign = 'center';
+    ctx.fillText(`固定: ${p.fixed.w}×${p.fixed.h}`, offX + fwPx/2, offY - 10);
+
+    // Moving shape
+    const mxPx = offX + snap.movX * scale;
+    const msPx = snap.movSize * scale;
+    const myPx = offY; // aligned at top
+
+    ctx.fillStyle = 'rgba(255,107,107,0.3)'; ctx.strokeStyle = '#FF6B6B'; ctx.lineWidth = 2.5;
+    if (snap.movType === 'rect') {
+      ctx.beginPath(); ctx.rect(mxPx, myPx, msPx, msPx); ctx.fill(); ctx.stroke();
+    } else {
+      // Right isosceles triangle
+      ctx.beginPath(); ctx.moveTo(mxPx, myPx); ctx.lineTo(mxPx + msPx, myPx); ctx.lineTo(mxPx, myPx + msPx); ctx.closePath();
+      ctx.fill(); ctx.stroke();
+    }
+
+    // Overlap highlight
+    if (snap.overlapArea > 0.01) {
+      const oxPx = Math.max(offX, mxPx);
+      const oyPx = offY;
+      let owPx, ohPx;
+      if (snap.movType === 'rect') {
+        owPx = Math.max(0, Math.min(mxPx + msPx, offX + fwPx) - oxPx);
+        ohPx = Math.max(0, Math.min(myPx + msPx, offY + fhPx) - oyPx);
+        ctx.fillStyle = 'rgba(50,212,99,0.35)'; ctx.strokeStyle = '#32d463'; ctx.lineWidth = 3;
+        ctx.beginPath(); ctx.rect(oxPx, oyPx, owPx, ohPx); ctx.fill(); ctx.stroke();
+      } else {
+        // Triangle overlap visualization (simplified: highlight region)
+        ctx.fillStyle = 'rgba(50,212,99,0.35)'; ctx.strokeStyle = '#32d463'; ctx.lineWidth = 3;
+        // Draw overlap as intersection clipping (approximate with a filled shape at intersection)
+        ctx.save();
+        ctx.beginPath(); ctx.rect(offX, offY, fwPx, fhPx); ctx.clip();
+        ctx.beginPath(); ctx.moveTo(mxPx, myPx); ctx.lineTo(mxPx+msPx, myPx); ctx.lineTo(mxPx, myPx+msPx); ctx.closePath();
+        ctx.fill(); ctx.stroke();
+        ctx.restore();
+      }
+    }
+
+    // Title & data
+    ctx.fillStyle = '#2c3e50'; ctx.font = 'bold 16px "Microsoft YaHei"'; ctx.textAlign = 'left';
+    ctx.fillText(p.title, 20, 22);
+    ctx.font = '14px "Microsoft YaHei"';
+    ctx.fillText(`重叠面积: ${snap.overlapArea.toFixed(2)}`, 20, this.H - 12);
+
+    // Mini overlap area graph
+    const oaMax = snap.maxArea || 1;
+    this._drawMiniAreaGraph(snap, snap.overlapData, '重叠面积 S(t)', oaMax, snap.totalTime, 560, 280, 220, 140);
+  }
+
+  // ===== TYPE 7: 自定义通用 =====
+  _drawType7(p, snap) {
+    const ctx = this.ctx;
+    const isDark = document.body.classList.contains('dark');
+    const xr = p.xRange, yr = p.yRange;
+    const gx = 60, gy = 30, gw = this.W - 200, gh = this.H - 80;
+
+    // Coordinate grid
+    this._drawCoordGrid(gx, gy, gw, gh, xr, yr);
+
+    // Draw fixed shapes
+    (snap.shapes || []).forEach(s => {
+      if (s.type === 'rect') {
+        const cx = gx + (s.x - xr[0])/(xr[1]-xr[0])*gw;
+        const cy = gy + gh - (s.y + s.h - yr[0])/(yr[1]-yr[0])*gh;
+        const cw = s.w/(xr[1]-xr[0])*gw;
+        const ch = s.h/(yr[1]-yr[0])*gh;
+        ctx.fillStyle = 'rgba(91,141,239,0.1)'; ctx.strokeStyle = s.color; ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.rect(cx, cy, cw, ch); ctx.fill(); ctx.stroke();
+        // Label
+        ctx.fillStyle = s.color; ctx.font = 'bold 14px "Microsoft YaHei"'; ctx.textAlign = 'center';
+        ctx.fillText(s.label, cx + cw/2, cy - 8);
+        // Diagonal
+        ctx.strokeStyle = s.color; ctx.lineWidth = 1; ctx.setLineDash([4, 3]);
+        ctx.beginPath(); ctx.moveTo(cx, cy+ch); ctx.lineTo(cx+cw, cy); ctx.stroke();
+        ctx.setLineDash([]);
+      }
+    });
+
+    // Draw fixed points
+    (snap.fixPoints || []).forEach(pt => {
+      const cx = gx + (pt.x - xr[0])/(xr[1]-xr[0])*gw;
+      const cy = gy + gh - (pt.y - yr[0])/(yr[1]-yr[0])*gh;
+      ctx.fillStyle = pt.color; ctx.beginPath(); ctx.arc(cx, cy, 5, 0, Math.PI*2); ctx.fill();
+      ctx.fillStyle = pt.color; ctx.font = 'bold 13px "Microsoft YaHei"'; ctx.textAlign = 'center';
+      ctx.fillText(pt.label, cx, cy - 10);
+    });
+
+    // Draw moving point
+    const mpx = gx + (snap.px - xr[0])/(xr[1]-xr[0])*gw;
+    const mpy = gy + gh - (snap.py - yr[0])/(yr[1]-yr[0])*gh;
+    const r = 8;
+    const grad = ctx.createRadialGradient(mpx-1, mpy-1, 1, mpx, mpy, r);
+    grad.addColorStop(0, '#fff'); grad.addColorStop(0.4, '#e8836d'); grad.addColorStop(1, 'rgba(0,0,0,0.4)');
+    ctx.fillStyle = grad; ctx.beginPath(); ctx.arc(mpx, mpy, r, 0, Math.PI*2); ctx.fill();
+    ctx.fillStyle = '#e8836d'; ctx.font = 'bold 14px "Microsoft YaHei"'; ctx.textAlign = 'center';
+    ctx.fillText('P', mpx, mpy - 14);
+    // PQ dashed to x-axis
+    ctx.strokeStyle = '#e8836d'; ctx.lineWidth = 1; ctx.setLineDash([3, 3]);
+    ctx.beginPath(); ctx.moveTo(mpx, mpy); ctx.lineTo(mpx, gy + gh); ctx.stroke();
+    ctx.setLineDash([]);
+    // Q point on x-axis
+    ctx.fillStyle = '#c4893a'; ctx.beginPath(); ctx.arc(mpx, gy+gh, 4, 0, Math.PI*2); ctx.fill();
+    ctx.fillText('Q', mpx + 8, gy + gh - 4);
+
+    // Title
+    ctx.fillStyle = isDark ? '#cdcfd3' : '#1e1e1e'; ctx.font = 'bold 16px "Microsoft YaHei"'; ctx.textAlign = 'left';
+    ctx.fillText(p.title, 20, 22);
+
+    // Live data
+    ctx.font = 'bold 13px "Microsoft YaHei"';
+    ctx.fillStyle = isDark ? '#aaa' : '#555';
+    ctx.fillText(`P(${snap.px.toFixed(2)},${snap.py.toFixed(2)})  |  ${snap.trackedName}=${snap.trackedVal.toFixed(3)}`, 20, this.H - 14);
+
+    // Mini tracked graph
+    this._drawMiniAreaGraph(snap, snap.trackData, `${snap.trackedName}(t)`, snap.maxTrack, snap.tMax, 570, 280, 210, 140);
+  }
+
+  /** Draw geometry editor overlay */
+  _drawGeoEditor(app) {
+    const ctx = this.ctx; const isDark = document.body.classList.contains('dark');
+    ctx.fillStyle = isDark ? '#1f2126' : '#f9f8f4'; ctx.fillRect(0, 0, this.W, this.H);
+    // Grid
+    ctx.strokeStyle = isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)'; ctx.lineWidth = 0.5;
+    for (let x = 0; x <= this.W; x += 20) { ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, this.H); ctx.stroke(); }
+    for (let y = 0; y <= this.H; y += 20) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(this.W, y); ctx.stroke(); }
+    // Lines
+    (app._geoLines||[]).forEach(l => {
+      ctx.strokeStyle = '#c4893a'; ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.moveTo(l.x1, l.y1); ctx.lineTo(l.x2, l.y2); ctx.stroke();
+    });
+    // Points
+    (app._geoPts||[]).forEach((pt, i) => {
+      const isMoving = app._geoMoving === pt.label;
+      const isPath = app._geoPath.includes(pt.label);
+      ctx.fillStyle = isMoving ? '#e8836d' : isPath ? '#c4893a' : '#5b8def';
+      ctx.beginPath(); ctx.arc(pt.x, pt.y, isMoving ? 8 : 6, 0, Math.PI*2); ctx.fill();
+      ctx.fillStyle = '#fff'; ctx.font = 'bold 11px'; ctx.textAlign = 'center';
+      ctx.fillText(pt.label, pt.x, pt.y + 3);
+      ctx.fillStyle = isDark ? '#ddd' : '#333'; ctx.font = 'bold 14px';
+      ctx.fillText(pt.label, pt.x, pt.y - 12);
+    });
+    // Path arrows
+    if (app._geoPath.length >= 2) {
+      ctx.strokeStyle = '#e8836d'; ctx.lineWidth = 3; ctx.setLineDash([6, 4]);
+      ctx.beginPath();
+      for (let i = 0; i < app._geoPath.length; i++) {
+        const p = app._geoPts.find(q => q.label === app._geoPath[i]);
+        if (!p) continue;
+        if (i === 0) ctx.moveTo(p.x, p.y); else ctx.lineTo(p.x, p.y);
+      }
+      ctx.stroke(); ctx.setLineDash([]);
+    }
+    // Help text
+    ctx.fillStyle = isDark ? '#cdcfd3' : '#1e1e1e'; ctx.font = 'bold 16px "Microsoft YaHei"'; ctx.textAlign = 'left';
+    ctx.fillText('✏️ 几何编辑器 — 点击画布放置顶点，下方工具栏配置动点和路径', 20, 25);
+    ctx.font = '13px "Microsoft YaHei"'; ctx.fillStyle = isDark ? '#999' : '#666';
+    ctx.fillText(`已放置 ${(app._geoPts||[]).length} 个顶点 | 动点: ${app._geoMoving||'未选'} | 路径: ${(app._geoPath||[]).join('→')||'未设置'}`, 20, 45);
+  }
+}
+
+// ============ APP CONTROLLER ============
+class App {
+  constructor() {
+    this.animState = new AnimState();
+    this.renderer = new Renderer();
+    this.animId = null;
+    this._lastTs = 0;
+    this._curProblem = null;
+  }
+
+  init() {
+    // Theme toggle
+    $('themeBtn').addEventListener('click', () => {
+      document.body.classList.toggle('dark');
+      $('themeBtn').textContent = document.body.classList.contains('dark') ? '🌙' : '☀️';
+      this._redraw();
+    });
+
+
+    // Example buttons
+    document.querySelectorAll('.example-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const type = parseInt(btn.dataset.example);
+        $('problemInput').value = EXAMPLES[type] || '';
+        this.loadProblem(EXAMPLES[type] || '', true);
+      });
+    });
+
+    // Parse button
+    $('btnParse').addEventListener('click', () => {
+      const text = $('problemInput').value.trim();
+      if (!text) { this._showStatus('请先输入或选择示例题目', 'warn'); return; }
+      this.loadProblem(text, false);
+    });
+
+    // Play/Pause/Reset
+    $('btnPlay').addEventListener('click', () => this.play());
+    $('btnPause').addEventListener('click', () => this.pause());
+    $('btnReset').addEventListener('click', () => this.reset());
+
+    // Slider
+    $('timeSlider').addEventListener('input', () => {
+      this.pause();
+      const val = parseFloat($('timeSlider').value);
+      const total = this.animState.getTotalRange();
+      const frac = val / 100;
+      this.animState.setCurrentValue(frac * total);
+      this._updateAll();
+    });
+
+    // Speed
+    $('speedSelect').addEventListener('change', () => {
+      this.animState.speed = parseFloat($('speedSelect').value);
+    });
+
+    // Manual config toggle
+    $('manualToggle').addEventListener('click', () => {
+      $('manualToggle').classList.toggle('open');
+      $('manualPanel').classList.toggle('show');
+    });
+
+    // Manual config type switcher
+    $('cfgType').addEventListener('change', () => {
+      this._updateConfigPanel();
+    });
+
+    // Apply manual config
+    $('btnApply').addEventListener('click', () => {
+      const problem = this._readManualConfig();
+      if (problem) {
+        this._curProblem = problem;
+        this.animState.load(problem);
+        this.pause();
+        this.reset();
+        this._updateConfigPanelFromProblem(problem);
+        $('statusBar').className = 'status-bar show success';
+        $('statusBar').innerHTML = '✅ 手动配置已应用';
+        this._updateAll();
+      }
+    });
+
+    // ---- Canvas drag-to-pan & scroll-to-zoom (coordinate types 2,4,5) ----
+    this._dragInfo = null;
+    canvas.addEventListener('mousedown', (e) => {
+      const p = this._curProblem; if (!p || ![2,4,5].includes(p.type)) return;
+      if (!p._defaultXRange) { p._defaultXRange = [...(p.xRange||[0,10])]; p._defaultYRange = [...(p.yRange||[0,10])]; }
+      this._dragInfo = { sx: e.offsetX, sy: e.offsetY, xr: [...(p.xRange||[0,10])], yr: [...(p.yRange||[0,10])] };
+      canvas.style.cursor = 'grabbing';
+    });
+    window.addEventListener('mousemove', (e) => {
+      if (!this._dragInfo) return;
+      const p = this._curProblem; if (!p) return;
+      const rect = canvas.getBoundingClientRect();
+      const mx = (e.clientX - rect.left) * (CW / rect.width);
+      const my = (e.clientY - rect.top) * (CH / rect.height);
+      const g = this._gridLayout();
+      if (!g) return;
+      const dxWorld = -(mx - this._dragInfo.sx) / g.pxPerUnit;
+      const dyWorld = (my - this._dragInfo.sy) / g.pxPerUnit;
+      p.xRange = [this._dragInfo.xr[0] + dxWorld, this._dragInfo.xr[1] + dxWorld];
+      p.yRange = [this._dragInfo.yr[0] + dyWorld, this._dragInfo.yr[1] + dyWorld];
+      this._updateAll();
+    });
+    window.addEventListener('mouseup', () => {
+      if (this._dragInfo) { this._dragInfo = null; canvas.style.cursor = ''; }
+    });
+    canvas.addEventListener('wheel', (e) => {
+      e.preventDefault();
+      const p = this._curProblem; if (!p || ![2,4,5].includes(p.type)) return;
+      const g = this._gridLayout(); if (!g) return;
+      const rect = canvas.getBoundingClientRect();
+      const mx = (e.clientX - rect.left) * (CW / rect.width);
+      const my = (e.clientY - rect.top) * (CH / rect.height);
+      // World coords at cursor
+      const wx = g.xr[0] + (mx - g.gx) / g.gw * (g.xr[1] - g.xr[0]);
+      const wy = g.yr[0] + (g.gy + g.gh - my) / g.gh * (g.yr[1] - g.yr[0]);
+      const factor = e.deltaY > 0 ? 1.12 : 1 / 1.12;
+      // Zoom around cursor
+      p.xRange = [wx - (wx - g.xr[0]) * factor, wx + (g.xr[1] - wx) * factor];
+      p.yRange = [wy - (wy - g.yr[0]) * factor, wy + (g.yr[1] - wy) * factor];
+      // Store as defaults for reset
+      if (!p._defaultXRange) { p._defaultXRange = [...g.xr]; p._defaultYRange = [...g.yr]; }
+      this._updateAll();
+      this._dragInfo = null;
+    }, { passive: false });
+
+    // Touch support (mobile)
+    canvas.addEventListener('touchstart', (e) => {
+      const p = this._curProblem; if (!p || ![2,4,5].includes(p.type)) return;
+      if (e.touches.length === 1) {
+        const t = e.touches[0]; const rect = canvas.getBoundingClientRect();
+        this._dragInfo = { sx: (t.clientX-rect.left)*(CW/rect.width), sy: (t.clientY-rect.top)*(CH/rect.height),
+          xr: [...(p.xRange||[0,10])], yr: [...(p.yRange||[0,10])] };
+      } else if (e.touches.length === 2) {
+        this._pinchDist = Math.hypot(e.touches[0].clientX-e.touches[1].clientX, e.touches[0].clientY-e.touches[1].clientY);
+        this._dragInfo = null;
+      }
+    }, { passive: false });
+    canvas.addEventListener('touchmove', (e) => {
+      e.preventDefault();
+      const p = this._curProblem; if (!p) return;
+      const rect = canvas.getBoundingClientRect();
+      if (e.touches.length === 1 && this._dragInfo) {
+        const t = e.touches[0];
+        const mx = (t.clientX-rect.left)*(CW/rect.width), my = (t.clientY-rect.top)*(CH/rect.height);
+        const g = this._gridLayout(); if (!g) return;
+        const dxW = -(mx-this._dragInfo.sx)/g.pxPerUnit, dyW = (my-this._dragInfo.sy)/g.pxPerUnit;
+        p.xRange = [this._dragInfo.xr[0]+dxW, this._dragInfo.xr[1]+dxW];
+        p.yRange = [this._dragInfo.yr[0]+dyW, this._dragInfo.yr[1]+dyW];
+        this._updateAll();
+      } else if (e.touches.length === 2) {
+        const d = Math.hypot(e.touches[0].clientX-e.touches[1].clientX, e.touches[0].clientY-e.touches[1].clientY);
+        if (this._pinchDist && d > 0) {
+          const factor = this._pinchDist / d;
+          this._pinchDist = d;
+          const g = this._gridLayout(); if (!g) return;
+          const cx = (g.xr[0]+g.xr[1])/2, cy = (g.yr[0]+g.yr[1])/2;
+          const hw = (g.xr[1]-g.xr[0])/2*factor, hh = (g.yr[1]-g.yr[0])/2*factor;
+          p.xRange = [cx-hw, cx+hw]; p.yRange = [cy-hh, cy+hh];
+          if (!p._defaultXRange) { p._defaultXRange = [...g.xr]; p._defaultYRange = [...g.yr]; }
+          this._updateAll();
+        }
+      }
+    }, { passive: false });
+    canvas.addEventListener('touchend', () => { this._dragInfo = null; this._pinchDist = 0; });
+
+
+    // ---- Geometry Editor (for Type 7) ----
+    this._geoPts = [];        // {x, y, label}
+    this._geoLines = [];      // {x1,y1,x2,y2}
+    this._geoMoving = '';     // label of moving point
+    this._geoPath = [];       // labels of path vertices in order
+    this._geoRecording = false; // recording path clicks
+
+    $('geoEditor').style.display = 'none'; // hidden by default, shown when Type 7 selected
+
+    // Show geo editor when Type 7 is selected in manual config
+    $('cfgType').addEventListener('change', () => {
+      $('geoEditor').style.display = $('cfgType').value === '7' ? 'block' : 'none';
+    });
+
+    const updateGeoDropdowns = () => {
+      const sel = $('geoMoving');
+      const labels = this._geoPts.map(p => p.label);
+      sel.innerHTML = '<option value="">选择动点…</option>' + labels.map(l => `<option value="${l}" ${this._geoMoving===l?'selected':''}>${l}</option>`).join('');
+      $('geoPathShow').textContent = this._geoPath.length ? '→'.repeat(0) + this._geoPath.join('→') : '未设置';
+    };
+
+    const drawGeo = () => {
+      // Draw current geometry state on canvas (called from _updateAll when active)
+    };
+
+    // Canvas click handler for geo editor
+    canvas.addEventListener('click', (e) => {
+      if ($('geoEditor').style.display !== 'block') return;
+      const rect = canvas.getBoundingClientRect();
+      const cx = (e.clientX - rect.left) * (CW / rect.width);
+      const cy = (e.clientY - rect.top) * (CH / rect.height);
+
+      if (document.activeElement === $('geoAddPt') || this._geoRecording) {
+        // Add point
+        const label = $('geoLabel').value.trim() || String.fromCharCode(65 + this._geoPts.length);
+        this._geoPts.push({ x: cx, y: cy, label });
+        // Auto-advance label
+        const next = String.fromCharCode(label.charCodeAt(0) + 1);
+        $('geoLabel').value = next;
+        updateGeoDropdowns();
+        this._updateAll();
+      }
+    });
+
+    // Button handlers
+    $('geoAddPt').addEventListener('click', () => { document.activeElement?.blur(); });
+    $('geoRect').addEventListener('click', () => {
+      if (this._geoPts.length >= 4) {
+        const pts = this._geoPts.slice(-4);
+        // Connect: 0-1, 1-2, 2-3, 3-0 to form rectangle, and diagonal for first/last
+        this._geoLines = [
+          { x1: pts[0].x, y1: pts[0].y, x2: pts[1].x, y2: pts[1].y },
+          { x1: pts[1].x, y1: pts[1].y, x2: pts[2].x, y2: pts[2].y },
+          { x1: pts[2].x, y1: pts[2].y, x2: pts[3].x, y2: pts[3].y },
+          { x1: pts[3].x, y1: pts[3].y, x2: pts[0].x, y2: pts[0].y },
+        ];
+        // Add diagonal (pts[0] to pts[2], typically D to B)
+        this._geoLines.push({ x1: pts[0].x, y1: pts[0].y, x2: pts[2].x, y2: pts[2].y });
+      }
+      this._updateAll();
+    });
+    $('geoLineJoin').addEventListener('click', () => {
+      if (this._geoPts.length >= 2) {
+        const pts = this._geoPts.slice(-2);
+        this._geoLines.push({ x1: pts[0].x, y1: pts[0].y, x2: pts[1].x, y2: pts[1].y });
+      }
+      this._updateAll();
+    });
+    $('geoUndo').addEventListener('click', () => {
+      if (this._geoPts.length) { this._geoPts.pop(); updateGeoDropdowns(); this._updateAll(); }
+    });
+    $('geoClear').addEventListener('click', () => {
+      this._geoPts = []; this._geoLines = []; this._geoMoving = ''; this._geoPath = []; this._geoRecording = false;
+      updateGeoDropdowns(); this._updateAll();
+    });
+    $('geoMoving').addEventListener('change', () => { this._geoMoving = $('geoMoving').value; });
+    $('geoPathRec').addEventListener('click', () => {
+      if (this._geoRecording) {
+        this._geoRecording = false; $('geoPathRec').textContent = '🔴 记录路径';
+      } else {
+        this._geoPath = []; this._geoRecording = true; $('geoPathRec').textContent = '⏹ 停止记录';
+        $('geoPathShow').textContent = '点击顶点...';
+      }
+      this._updateAll();
+    });
+    $('geoPathClear').addEventListener('click', () => { this._geoPath = []; updateGeoDropdowns(); this._updateAll(); });
+
+    $('geoApply').addEventListener('click', () => {
+      if (this._geoPts.length < 2) return;
+      const pts = this._geoPts;
+      // Auto-detect shape: 4+ points → rectangle
+      let shapes = [];
+      let fixPoints = pts.map(p => ({ ...p, color: (this._geoMoving === p.label ? '#e8836d' : '#5bb98c') }));
+      if (pts.length >= 4) {
+        const xs = pts.slice(0,4).map(p=>p.x), ys = pts.slice(0,4).map(p=>p.y);
+        const x=Math.min(...xs), y=Math.min(...ys), w=Math.max(...xs)-x, h=Math.max(...ys)-y;
+        shapes = [{ type:'rect', x, y, w:Math.max(w,1), h:Math.max(h,1), color:'#5b8def', label:pts.slice(0,4).map(p=>p.label).join('') }];
+      }
+      // Build path segments
+      let pathSegs = [];
+      if (this._geoPath.length >= 2) {
+        let tAcc = 0;
+        for (let i=0; i<this._geoPath.length-1; i++) {
+          const from = pts.find(p=>p.label===this._geoPath[i]), to = pts.find(p=>p.label===this._geoPath[i+1]);
+          const len = (from&&to)?Math.hypot(to.x-from.x,to.y-from.y):5;
+          tAcc += len;
+          pathSegs.push({ tEnd: Math.round(tAcc*10)/10 });
+        }
+      } else {
+        pathSegs = [{ tEnd: 5 }, { tEnd: 8 }];
+      }
+
+      const problem = {
+        type:7, title:'自定义几何动点', confidence:'manual',
+        xRange:[-1, Math.max(...pts.map(p=>p.x))+3], yRange:[-3, Math.max(...pts.map(p=>p.y))+3],
+        tMax: pathSegs.length?pathSegs[pathSegs.length-1].tEnd:10, paramName:'t',
+        shapes, fixPoints, pathSegs,
+        trackedExpr: $('geoTrack').value||'py-px', trackedName: $('geoTrackName').value||'y',
+        unitDist:'', unitTime:'s'
+      };
+
+      this._curProblem = problem; this.animState.load(problem);
+      this.pause(); this.reset();
+      $('geoEditor').style.display = 'none';
+      $('statusBar').className = 'status-bar show success';
+      $('statusBar').innerHTML = '✅ 几何动画已生成';
+      this._updateAll();
+    });
+
+    // ---- End geometry editor ----
+
+    // Auto-detect type as user types (debounced)
+    let detectTimer = null;
+    $('problemInput').addEventListener('input', () => {
+      clearTimeout(detectTimer);
+      detectTimer = setTimeout(() => {
+        const text = $('problemInput').value.trim();
+        if (text.length < 5) { $('statusBar').className = 'status-bar'; return; }
+        const { type, confidence } = Parser.detectType(text);
+        const names = {1:'🏃 追及相遇',2:'📐 函数动态',3:'📈 分段运动',4:'📊 动点面积',5:'🔺 双动点几何',6:'⬜ 平移重叠',7:'🔧 自定义'};
+        const confLabel = confidence==='high'?'✓':'?';
+        $('statusBar').className = 'status-bar show ' + (confidence==='high'?'success':confidence==='medium'?'warn':'error');
+        $('statusBar').innerHTML = `🔍 检测到：<b>${names[type]||'未知'}</b> ${confLabel} — 点击「解析并生成动画」确认`;
+      }, 600);
+    });
+
+    // Initial draw
+    this._redraw();
+  }
+
+  /** Compute grid layout for coordinate types (used by pan/zoom) */
+  _gridLayout() {
+    const p = this._curProblem;
+    if (!p || ![2,4,5,7].includes(p.type)) return null;
+    let gx = 60, gy = 30, gw = CW - 130, gh = CH - 100;
+    if (p.type === 4 || p.type === 5) { gx = 60; gy = 30; gw = CW - 200; gh = CH - 80; }
+
+    // Get or auto-create ranges
+    if (!p.xRange) {
+      const snap = this.animState.getSnapshot();
+      if (!snap) return null;
+      if (p.type === 4) {
+        p.xRange = [-0.5, snap.tMax + 1];
+        p.yRange = [-0.5, Math.max(snap.maxArea * 1.5, (snap.qy||0) * 1.2, 5)];
+      } else if (p.type === 5) {
+        const vs = snap.vertices; const m = 1.5;
+        p.xRange = [Math.min(...vs.map(v=>v.x),snap.pPos.x,snap.qPos.x)-m, Math.max(...vs.map(v=>v.x),snap.pPos.x,snap.qPos.x)+m];
+        p.yRange = [Math.min(...vs.map(v=>v.y),snap.pPos.y,snap.qPos.y)-m, Math.max(...vs.map(v=>v.y),snap.pPos.y,snap.qPos.y)+m];
+      }
+    }
+    const xr = [...p.xRange], yr = [...p.yRange];
+
+    // For type 2: enforce isometric yr
+    if (p.type === 2) {
+      const ppu = gw / (xr[1] - xr[0]);
+      let yMinV=Infinity, yMaxV=-Infinity;
+      const curves = p.curves || [];
+      for (let i=0; i<=40; i++) {
+        const sx = xr[0]+(i/40)*(xr[1]-xr[0]);
+        curves.forEach(c => { const y = evalExpr(c.expr, {x:sx}); if (isFinite(y)) { yMinV=Math.min(yMinV,y); yMaxV=Math.max(yMaxV,y); } });
+      }
+      const yMid = (yMinV+yMaxV)/2, wYSpan = gh / ppu;
+      yr[0] = yMid - wYSpan/2; yr[1] = yMid + wYSpan/2;
+    }
+    const pxPerUnit = gw / (xr[1] - xr[0]);
+    return { gx, gy, gw, gh, xr, yr, pxPerUnit };
+    const pxPerUnitY = gh / (yr[1] - yr[0]);
+    return { gx, gy, gw, gh, xr, yr, pxPerUnit: pxPerUnitX };
+  }
+
+  /** Build Type 7 problem from user-drawn marks */
+  _zoom(factor) {
+    const p = this._curProblem;
+    if (!p || ![2,4,5].includes(p.type)) return;
+    const g = this._gridLayout();
+    if (!g || !g.xr || !g.yr) return;
+
+    if (factor === 0) {
+      if (p._defaultXRange) { p.xRange = [...p._defaultXRange]; p.yRange = [...p._defaultYRange]; }
+    } else {
+      if (!p._defaultXRange) { p._defaultXRange = [...g.xr]; p._defaultYRange = [...g.yr]; }
+      const cx = (g.xr[0] + g.xr[1]) / 2, cy = (g.yr[0] + g.yr[1]) / 2;
+      const hw = (g.xr[1] - g.xr[0]) / 2 * factor, hh = (g.yr[1] - g.yr[0]) / 2 * factor;
+      p.xRange = [cx - hw, cx + hw]; p.yRange = [cy - hh, cy + hh];
+    }
+    this._updateAll();
+  }
+
+  loadProblem(text, isExample) {
+    const result = Parser.parse(text);
+    this._curProblem = result;
+
+    $('statusBar').className = 'status-bar show';
+    if (result.confidence === 'high') {
+      $('statusBar').className += ' success';
+      $('statusBar').innerHTML = `✅ 已识别为【类型${result.type}·${result.title}】`;
+    } else if (result.confidence === 'medium') {
+      $('statusBar').className += ' warn';
+      $('statusBar').innerHTML = `⚠️ 已按【类型${result.type}·${result.title}】解析，如有误请展开手动配置调整`;
+    } else {
+      $('statusBar').className += ' error';
+      $('statusBar').innerHTML = `❌ 无法完全识别，已使用默认参数。建议展开下方"手动配置"调整`;
+    }
+
+    this.animState.load(result);
+    this.pause();
+    this.reset();
+    this._updateConfigPanelFromProblem(result);
+    this._updateAll();
+  }
+
+  play() {
+    if (!this._curProblem) return;
+    this.animState.playing = true;
+    this._lastTs = 0;
+    if (!this.animId) this._loop(0);
+  }
+
+  pause() {
+    this.animState.playing = false;
+    this._lastTs = 0;
+  }
+
+  reset() {
+    this.pause();
+    this.animState.t = 0;
+    if (this._curProblem?.type === 2) {
+      const r = this._curProblem.paramRange;
+      const mid = (isFinite(r.min) && isFinite(r.max)) ? (r.min + r.max) / 2
+        : isFinite(r.min) ? r.min + 2 : isFinite(r.max) ? r.max - 2 : 0;
+      this.animState.param = mid;
+    }
+    this._updateAll();
+  }
+
+  _loop(ts) {
+    if (this.animState.playing) {
+      if (this._lastTs > 0) {
+        let dt = (ts - this._lastTs) / 1000 * this.animState.speed;
+        dt = Math.min(dt, 0.1); // cap to prevent jumps
+
+        const total = this.animState.getTotalRange();
+        const cur = this.animState.getCurrentValue();
+        let next = cur + dt;
+
+        if (this._curProblem?.type === 2) {
+          const r = this._curProblem.paramRange;
+          const span = r.max - r.min;
+          if (span > 0.001) {
+            next = r.min + ((next - r.min) % span);
+          }
+          this.animState.param = next;
+        } else {
+          // Types 1,3,4,5,6: advance time, stop at end
+          if (next >= total) {
+            next = total;
+            this.animState.t = next;
+            this.animState.playing = false;
+          } else {
+            this.animState.t = next;
+          }
+        }
+      }
+      this._lastTs = ts;
+    }
+
+    this._updateAll();
+
+    if (this.animState.playing) {
+      this.animId = requestAnimationFrame((t) => this._loop(t));
+    } else {
+      this.animId = null;
+    }
+  }
+
+  _updateAll() {
+    const p = this._curProblem;
+    const snap = this.animState.getSnapshot();
+
+    // Slider
+    const total = this.animState.getTotalRange();
+    const cur = this.animState.getCurrentValue();
+    $('timeSlider').value = total > 0 ? (cur / total * 100) : 0;
+
+    // Param label
+    if (p?.type === 2) {
+      const pn = p.paramName || 'm';
+      const inRange = snap && snap.inRange;
+      const cls = inRange ? 'status-ok' : 'status-bad';
+      const icon = inRange ? '✅' : '❌';
+      const smin = snap?.pMin ?? p.paramRange.min, smax = snap?.pMax ?? p.paramRange.max;
+      let rd;
+      if (p.relType === 'above') rd = `${pn} > ${smin.toFixed(3)}`;
+      else if (p.relType === 'below') rd = `${pn} < ${smax.toFixed(3)}`;
+      else rd = `${smin.toFixed(3)} < ${pn} < ${smax.toFixed(3)}`;
+      $('paramLabel').innerHTML = `📐 ${pn} = <span id="paramValue">${cur.toFixed(3)}</span>  |  ${rd}  <span class="${cls}">${icon}</span>`;
+    } else {
+      $('paramLabel').innerHTML = `⏱ 当前时间：<span id="paramValue">${cur.toFixed(1)}</span> 秒`;
+    }
+
+    // Live data
+   $('liveData').textContent = this._getLiveText(p, snap);
+
+    // Draw
+    if ($('geoEditor').style.display === 'block') {
+      this.renderer._drawGeoEditor(this);
+    } else {
+      this.renderer.draw(p, snap);
+    }
+  }
+
+  _getLiveText(p, snap) {
+    if (!p || !snap) return '等待输入题目…';
+    switch (p.type) {
+      case 1: {
+        const o1 = snap.objects[0], o2 = snap.objects[1];
+        return `${o1.name}位置: ${o1.pos.toFixed(1)}${p.unitDist}  |  ${o2.name}位置: ${o2.pos.toFixed(1)}${p.unitDist}  |  剩余距离: ${snap.remaining.toFixed(1)}${p.unitDist}  |  相遇时间: ${snap.meetingTime.toFixed(2)}${p.unitTime}`;
+      }
+      case 2: {
+        const pn = p.paramName || 'm';
+        let rangeStr;
+        if (p.relType === 'above') rangeStr = `${pn} > ${snap.pMin.toFixed(3)}`;
+        else if (p.relType === 'below') rangeStr = `${pn} < ${snap.pMax.toFixed(3)}`;
+        else rangeStr = `${snap.pMin.toFixed(3)} < ${pn} < ${snap.pMax.toFixed(3)}`;
+        return `${pn} = ${snap.paramVal.toFixed(3)}  |  ${rangeStr}  |  状态: ${snap.inRange ? '✅合规' : '❌超界'}  |  验证: ${snap.satisfied}/${snap.total}`;
+      }
+      case 3:
+        return `阶段: ${snap.segInfo.seg.label}  |  速度: ${snap.segInfo.v.toFixed(1)} ${p.unitDist}/${p.unitTime}  |  位移: ${snap.segInfo.s.toFixed(1)} ${p.unitDist}  |  进度: ${(Math.min(snap.segInfo.s / snap.totalDist * 100, 100)).toFixed(0)}%`;
+      case 4:
+        return `P(${snap.px.toFixed(2)}, 0)  |  Q(${snap.qx.toFixed(2)}, ${snap.qy.toFixed(2)})  |  △OPQ面积: ${snap.area.toFixed(3)}`;
+      case 5:
+        return `P位置: (${snap.pPos.x.toFixed(2)}, ${snap.pPos.y.toFixed(2)})  |  Q位置: (${snap.qPos.x.toFixed(2)}, ${snap.qPos.y.toFixed(2)})  |  PQ距离: ${snap.pqDist.toFixed(3)} ${p.unitDist}`;
+      case 6:
+        return `移动图形位置: x=${snap.movX.toFixed(1)}  |  重叠面积: ${snap.overlapArea.toFixed(2)}  |  最大重叠: ${snap.maxArea.toFixed(2)}`;
+      case 7:
+        return `P(${snap.px.toFixed(2)}, ${snap.py.toFixed(2)})  |  ${snap.trackedName}=${snap.trackedVal.toFixed(3)}  |  路径段: ${snap.curSeg+1}/${(p.pathSegs||[]).length}`;
+      default: return '';
+    }
+  }
+
+  _redraw() {
+    this.renderer.draw(this._curProblem, this.animState.getSnapshot());
+  }
+
+  _showStatus(msg, level) {
+    $('statusBar').className = `status-bar show ${level}`;
+    $('statusBar').innerHTML = msg;
+  }
+
+  _updateConfigPanel() {
+    const type = parseInt($('cfgType').value);
+    document.querySelectorAll('.config-type').forEach(el => el.style.display = 'none');
+    const target = document.getElementById(`cfgType${type}`);
+    if (target) target.style.display = 'block';
+  }
+
+  _updateConfigPanelFromProblem(p) {
+    if (!p) return;
+    $('cfgType').value = p.type;
+    this._updateConfigPanel();
+
+    if (p.type === 1) {
+      $('c1_dist').value = p.distance;
+      $('c1_v1').value = p.objects[0].speed;
+      $('c1_v2').value = p.objects[1].speed;
+      $('c1_dir1').value = p.objects[0].direction;
+      $('c1_dir2').value = p.objects[1].direction;
+      $('c1_delay1').value = p.objects[0].delay || 0;
+      $('c1_delay2').value = p.objects[1].delay || 0;
+    } else if (p.type === 2) {
+      $('c2_curves').value = (p.curves || []).map(c => c.expr).join('\n');
+      $('c2_pn').value = p.paramName || 'm';
+      $('c2_de').value = p.dynExpr || (p.paramName + '*x');
+      $('c2_rel').value = p.relType || 'between';
+      $('c2_op').value = p.condition.op;
+      $('c2_cval').value = p.condition.value;
+    } else if (p.type === 3) {
+      $('c3_segs').value = p.segments.map(s => `${s.duration},${s.v0},${s.a},${s.label}`).join('\n');
+    } else if (p.type === 4) {
+      $('c4_speed').value = p.speed;
+      $('c4_func').value = p.curveFunc;
+      $('c4_tmax').value = p.tMax;
+    } else if (p.type === 5) {
+      $('c5_ax').value = p.vertices[0].x; $('c5_ay').value = p.vertices[0].y;
+      $('c5_bx').value = p.vertices[1].x; $('c5_by').value = p.vertices[1].y;
+      $('c5_cx').value = p.vertices[2].x; $('c5_cy').value = p.vertices[2].y;
+      $('c5_pe').value = p.pointP.startIdx; $('c5_pe2').value = p.pointP.endIdx;
+      $('c5_qe').value = p.pointQ.startIdx; $('c5_qe2').value = p.pointQ.endIdx;
+      $('c5_vp').value = p.pointP.speed; $('c5_vq').value = p.pointQ.speed;
+    } else if (p.type === 6) {
+      $('c6_fw').value = p.fixed.w;
+      $('c6_fh').value = p.fixed.h;
+      $('c6_ms').value = p.moving.size;
+      $('c6_speed').value = p.moving.speed;
+    } else if (p.type === 7) {
+      const rect = (p.shapes||[]).find(s => s.type === 'rect') || { w: 4, h: 3 };
+      $('c7_b').value = rect.w; $('c7_a').value = rect.h;
+      const segs = p.pathSegs || [{ tEnd: 5 }, { tEnd: 8 }];
+      $('c7_t1').value = segs[0]?.tEnd || 5; $('c7_t2').value = segs[1]?.tEnd || 8;
+      $('c7_expr').value = p.trackedExpr || 'py-px';
+      $('c7_name').value = p.trackedName || 'PQ-DQ';
+      $('c7_x0').value = p.xRange ? p.xRange[0] : -1;
+      $('c7_x1').value = p.xRange ? p.xRange[1] : 8;
+      $('c7_y0').value = p.yRange ? p.yRange[0] : -3;
+      $('c7_y1').value = p.yRange ? p.yRange[1] : 6;
+    }
+  }
+
+  _readManualConfig() {
+    const type = parseInt($('cfgType').value);
+    let problem = null;
+
+    switch (type) {
+      case 1: {
+        const dist = parseFloat($('c1_dist').value) || 300;
+        problem = {
+          type: 1, title: '追及相遇问题', confidence: 'manual',
+          distance: dist, unitDist: 'km', unitTime: 'h',
+          objects: [
+            { name: '甲', speed: parseFloat($('c1_v1').value)||60, startPos: 0, direction: parseInt($('c1_dir1').value), delay: parseFloat($('c1_delay1').value)||0, color: '#b5583d' },
+            { name: '乙', speed: parseFloat($('c1_v2').value)||90, startPos: dist, direction: parseInt($('c1_dir2').value), delay: parseFloat($('c1_delay2').value)||0, color: '#3a7d5e' }
+          ]
+        };
+        break;
+      }
+      case 2: {
+        const rawCurves = $('c2_curves').value.trim().split('\n').filter(l => l.trim());
+        const curves = rawCurves.map((expr, i) => ({
+          expr: expr.trim(), label: `f${String.fromCharCode(8320 + i)}`,
+          color: CURVE_COLORS[i % CURVE_COLORS.length]
+        }));
+        const paramName = $('c2_pn').value.trim() || 'm';
+        const dynExpr = $('c2_de').value.trim() || (paramName + '*x');
+        const condVal = parseFloat($('c2_cval').value)||1;
+        const condOp = $('c2_op').value;
+        const relType = $('c2_rel').value;
+        // Recompute param range
+        const testVals = [];
+        for (let i=1;i<=60;i++) testVals.push(condVal+i*0.02);
+        testVals.push(condVal+2,condVal+5,condVal+10,condVal+50);
+        const lowerBs=[], upperBs=[];
+        testVals.forEach(x => {
+          let valid = (condOp==='>'||condOp==='>=')?x>condVal:x<condVal;
+          if (!valid||x===0) return;
+          const ys = curves.map(c=>evalExpr(c.expr,{x})).filter(y=>isFinite(y));
+          if (!ys.length) return;
+          const lo=Math.min(...ys), hi=Math.max(...ys);
+          if (relType==='above') lowerBs.push(hi/x);
+          else if (relType==='below') upperBs.push(lo/x);
+          else { lowerBs.push(lo/x); upperBs.push(hi/x); }
+        });
+        const pMin = lowerBs.length>0?Math.max(...lowerBs):-20;
+        const pMax = upperBs.length>0?Math.min(...upperBs):20;
+        const xMin=Math.min(0,condVal)-2, xMax=Math.max(condVal+4,6);
+        problem = {
+          type:2, title:'函数动态问题', confidence:'manual', curves, dynExpr, paramName, relType,
+          condition:{var:'x',op:condOp,value:condVal},
+          paramRange:{min:pMin,max:pMax}, xRange:[xMin,xMax], yRange:[-12,18]
+        };
+        break;
+      }
+      case 3: {
+        const lines = $('c3_segs').value.trim().split('\n').filter(l => l.trim());
+        const segments = lines.map(line => {
+          const [dur, v0, a, label] = line.split(',').map(s => s.trim());
+          return { duration: parseFloat(dur)||2, v0: parseFloat(v0)||0, a: parseFloat(a)||0, label: label || '运动' };
+        });
+        const totalTime = segments.reduce((s, seg) => s + seg.duration, 0);
+        let totalDist = 0;
+        segments.forEach(seg => { totalDist += seg.v0 * seg.duration + 0.5 * seg.a * seg.duration * seg.duration; });
+        problem = { type: 3, title: '物理分段运动', confidence: 'manual', segments, totalTime, totalDistance: Math.max(totalDist,1), unitDist: 'm', unitTime: 's' };
+        break;
+      }
+      case 4: {
+        problem = {
+          type: 4, title: '坐标系动点与面积', confidence: 'manual',
+          pathType: $('c4_path').value, speed: parseFloat($('c4_speed').value)||1,
+          curveFunc: $('c4_func').value || 'x*x', tMax: parseFloat($('c4_tmax').value)||5,
+          unitDist: '', unitTime: 's'
+        };
+        break;
+      }
+      case 5: {
+        const verts = [
+          { x: parseFloat($('c5_ax').value)||0, y: parseFloat($('c5_ay').value)||0, l: 'A' },
+          { x: parseFloat($('c5_bx').value)||8, y: parseFloat($('c5_by').value)||0, l: 'B' },
+          { x: parseFloat($('c5_cx').value)||8, y: parseFloat($('c5_cy').value)||6, l: 'C' }
+        ];
+        problem = {
+          type: 5, title: '双动点与几何关系', confidence: 'manual', vertices: verts,
+          pointP: { startIdx: parseInt($('c5_pe').value), endIdx: parseInt($('c5_pe2').value), speed: parseFloat($('c5_vp').value)||1, color: '#b5583d', name: 'P' },
+          pointQ: { startIdx: parseInt($('c5_qe').value), endIdx: parseInt($('c5_qe2').value), speed: parseFloat($('c5_vq').value)||2, color: '#3a7d5e', name: 'Q' },
+          unitDist: 'cm', unitTime: 's'
+        };
+        break;
+      }
+      case 6: {
+        const fw = parseFloat($('c6_fw').value)||6, fh = parseFloat($('c6_fh').value)||6;
+        const ms = parseFloat($('c6_ms').value)||4, sp = parseFloat($('c6_speed').value)||2;
+        problem = {
+          type: 6, title: '图形平移与重叠面积', confidence: 'manual',
+          fixed: { type: $('c6_fixed').value, w: fw, h: fh, color: '#667788' },
+          moving: { type: $('c6_mov').value, size: ms, speed: sp, startX: -ms - 1, color: '#b5583d' },
+          totalTime: (fw + ms) / sp + 1, unitDist: 'cm', unitTime: 's'
+        };
+        break;
+      }
+      case 7: {
+        const b = parseFloat($('c7_b').value)||4, a = parseFloat($('c7_a').value)||3;
+        const t1 = parseFloat($('c7_t1').value)||5, t2 = parseFloat($('c7_t2').value)||8;
+        const x0 = parseFloat($('c7_x0').value)||-1, x1 = parseFloat($('c7_x1').value)||8;
+        const y0 = parseFloat($('c7_y0').value)||-3, y1 = parseFloat($('c7_y1').value)||6;
+        problem = {
+          type: 7, title: '自定义动态问题', confidence: 'manual',
+          xRange: [x0, x1], yRange: [y0, y1], tMax: t2, paramName: 't',
+          shapes: [{ type: 'rect', x: 0, y: 0, w: b, h: a, color: '#5b8def', label: 'ABCD' }],
+          fixPoints: [
+            { x: 0, y: 0, color: '#5bb98c', label: 'D' },
+            { x: b, y: 0, color: '#5bb98c', label: 'C' },
+            { x: b, y: a, color: '#5bb98c', label: 'B' },
+            { x: 0, y: a, color: '#5bb98c', label: 'A' }
+          ],
+          pathSegs: [{ tEnd: t1, desc: 'D→B' }, { tEnd: t2, desc: 'B→C' }],
+          trackedExpr: $('c7_expr').value || 'py-px',
+          trackedName: $('c7_name').value || 'PQ-DQ',
+          unitDist: '', unitTime: 's'
+        };
+        break;
+      }
+    }
+    return problem;
+  }
+}
+
+// ============ BOOTSTRAP ============
+window.addEventListener('DOMContentLoaded', () => {
+  const app = new App();
+  window._app = app;
+  app.init();
+
+  // Re-setup canvas after fonts/content loaded
+  setupHiDPI();
+
+  // Load first example by default
+  $('problemInput').value = EXAMPLES[1];
+  app.loadProblem(EXAMPLES[1], true);
+});
+</script>
+
+</body>
+</html>
